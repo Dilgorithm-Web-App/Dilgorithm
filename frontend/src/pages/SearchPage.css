@@ -1,0 +1,37 @@
+/* SEARCH PAGE (sp- prefix) */
+.sp-wrap { max-width: 900px; }
+.sp-searchbar { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 30px; padding: 14px 24px; box-shadow: 0 2px 12px rgba(0,0,0,.05); border: 1px solid #eee; margin-bottom: 24px; }
+.sp-search-icon { flex-shrink: 0; }
+.sp-input { flex: 1; border: none; outline: none; font-size: 15px; color: #333; background: transparent; font-family: inherit; }
+.sp-input::placeholder { color: #bbb; }
+
+.sp-filters-card { background: #fff; border-radius: 16px; padding: 24px 28px; box-shadow: 0 2px 12px rgba(0,0,0,.04); border: 1px solid #eee; margin-bottom: 32px; }
+.sp-filters-header { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: #8B1A1A; margin-bottom: 18px; }
+.sp-filter-group { margin-bottom: 14px; }
+.sp-label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+.sp-select { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #e0e0e0; font-size: 14px; color: #333; background: #fafafa; outline: none; transition: border-color .2s; appearance: none; cursor: pointer; font-family: inherit; }
+.sp-select:focus { border-color: #8B1A1A; }
+.sp-apply-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; background: linear-gradient(135deg, #8B1A1A, #C62828); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: box-shadow .2s, transform .15s; }
+.sp-apply-btn:hover { box-shadow: 0 4px 14px rgba(139,26,26,.3); transform: translateY(-1px); }
+
+.sp-browse-title { font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 0 0 18px; }
+
+.sp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+.sp-profile-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.05); border: 1px solid #eee; transition: transform .25s, box-shadow .25s; cursor: pointer; animation: spIn .4s ease both; }
+.sp-profile-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+.sp-profile-photo { height: 220px; display: flex; align-items: center; justify-content: center; position: relative; }
+.sp-profile-initial { font-size: 52px; font-weight: 800; color: rgba(255,255,255,.8); }
+.sp-heart-btn { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,.8); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+.sp-heart-btn:hover { background: #fff; color: #e91e63; transform: scale(1.1); }
+.sp-profile-body { padding: 14px 16px 16px; }
+.sp-profile-name { font-size: 15px; font-weight: 700; color: #1a1a1a; margin: 0 0 6px; }
+.sp-profile-meta { font-size: 12px; color: #777; margin-bottom: 3px; }
+.sp-compat-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.sp-compat-tag { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.sp-compat-tag--red { background: #FFEBEE; color: #C62828; }
+.sp-view-btn { width: 100%; padding: 10px; border: none; border-radius: 10px; background: linear-gradient(135deg, #8B1A1A, #C62828); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: box-shadow .2s; }
+.sp-view-btn:hover { box-shadow: 0 2px 8px rgba(139,26,26,.3); }
+
+.sp-empty { text-align: center; padding: 40px 0; color: #999; }
+@keyframes spIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 768px) { .sp-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } }

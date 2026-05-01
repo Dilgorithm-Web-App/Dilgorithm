@@ -27,7 +27,7 @@ export const Preferences = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // Convert comma-separated string into an array (e.g. "Coding, Hiking" -> ["Coding", "Hiking"])
         const interestArray = interests.split(',').map(item => item.trim()).filter(item => item !== '');
 
@@ -52,24 +52,24 @@ export const Preferences = () => {
         <div style={{ maxWidth: '500px', margin: '50px auto', padding: '20px', fontFamily: 'sans-serif' }}>
             <h2>Set Your Preferences</h2>
             <p>Help the Dilgorithm AI find your perfect match.</p>
-            
+
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                
+
                 <label>
-                    <strong>Your Interests (comma separated)</strong><br/>
-                    <input 
-                        type="text" 
-                        value={interests} 
-                        onChange={(e) => setInterests(e.target.value)} 
-                        placeholder="e.g. Reading, Hiking, Cooking" 
+                    <strong>Your Interests (comma separated)</strong><br />
+                    <input
+                        type="text"
+                        value={interests}
+                        onChange={(e) => setInterests(e.target.value)}
+                        placeholder="e.g. Reading, Hiking, Cooking"
                         style={{ width: '100%', padding: '8px', marginTop: '5px' }}
                     />
                 </label>
 
                 <label>
-                    <strong>Preferred Sect (Religious Constraint)</strong><br/>
-                    <select 
-                        value={sect} 
+                    <strong>Preferred Sect (Religious Constraint)</strong><br />
+                    <select
+                        value={sect}
                         onChange={(e) => setSect(e.target.value)}
                         style={{ width: '100%', padding: '8px', marginTop: '5px' }}
                     >
@@ -81,12 +81,12 @@ export const Preferences = () => {
                 </label>
 
                 <label>
-                    <strong>Preferred Location</strong><br/>
-                    <input 
-                        type="text" 
-                        value={location} 
-                        onChange={(e) => setLocation(e.target.value)} 
-                        placeholder="e.g. Lahore, Pakistan" 
+                    <strong>Preferred Location</strong><br />
+                    <input
+                        type="text"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="e.g. Lahore, Pakistan"
                         style={{ width: '100%', padding: '8px', marginTop: '5px' }}
                     />
                 </label>

@@ -1,0 +1,150 @@
+/* ================================================
+   DASHBOARD LAYOUT — Shared shell for all pages
+   Uses dl- prefix to avoid conflicts
+   ================================================ */
+
+.dl-layout {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FFF1F2 0%, #FDF2F8 50%, #FAF5FF 100%);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Sidebar ── */
+.dl-sidebar {
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  gap: 8px;
+  position: fixed;
+  top: 80px;
+  left: 16px;
+  bottom: 0;
+  z-index: 10;
+}
+
+.dl-sidebar-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dl-sidebar-btn:hover {
+  background: rgba(139, 26, 26, 0.06);
+  color: #8B1A1A;
+}
+
+.dl-sidebar-btn--active {
+  background: rgba(139, 26, 26, 0.08);
+  color: #8B1A1A;
+}
+
+.dl-sidebar-spacer {
+  flex: 1;
+}
+
+/* ── Main Area ── */
+.dl-main {
+  flex: 1;
+  margin-left: 88px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.dl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 36px;
+  position: relative;
+}
+
+.dl-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 2;
+}
+
+.dl-header-dg {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.dl-header-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #3e2723;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.dl-header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dl-header-brand {
+  height: 50px;
+  object-fit: contain;
+}
+
+.dl-header-right {
+  z-index: 2;
+}
+
+.dl-header-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B1A1A, #C62828);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(139, 26, 26, 0.25);
+}
+
+.dl-header-avatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(139, 26, 26, 0.35);
+}
+
+/* ── Content ── */
+.dl-content {
+  flex: 1;
+  padding: 8px 36px 40px;
+  animation: dlFadeIn 0.35s ease both;
+}
+
+@keyframes dlFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .dl-sidebar { display: none; }
+  .dl-main { margin-left: 0; }
+  .dl-header { padding: 12px 16px; }
+  .dl-header-brand { height: 36px; }
+  .dl-content { padding: 12px 16px 24px; }
+}

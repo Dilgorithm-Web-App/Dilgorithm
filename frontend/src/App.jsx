@@ -5,13 +5,21 @@ import { Preferences } from './pages/Preferences';
 import { AuthContext } from './AuthContext';
 import { useContext } from 'react';
 import { Chat } from './pages/Chat';
-import React, { useState, useEffect } from 'react';
-import api from './api'; // <-- Changed to match your folder structure
+import { HomePage } from './pages/HomePage';
+import { SearchPage } from './pages/SearchPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { DashboardLayout } from './components/DashboardLayout';
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);
     return user ? children : <Navigate to="/login" />;
 };
+
+const DashboardRoute = ({ children }) => (
+    <RequireAuth>
+        <DashboardLayout>{children}</DashboardLayout>
+    </RequireAuth>
+);
 
 function App() {
     return (
@@ -19,12 +27,14 @@ function App() {
             <Route path="/" element={<Navigate to="/login" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
-            {/* Protected Routes */}
-            <Route path="/feed" element={<RequireAuth><Feed /></RequireAuth>} />
-            <Route path="/preferences" element={<RequireAuth><Preferences /></RequireAuth>} />
-            <Route path="/chat/:roomName" element={<RequireAuth><Chat /></RequireAuth>} />
-            {/* <Route path="/chat/:roomName" element={<RequireAuth><Chat /></RequireAuth>} /> */}
+
+            {/* Protected Routes with Dashboard Layout */}
+            <Route path="/home" element={<DashboardRoute><HomePage /></DashboardRoute>} />
+            <Route path="/feed" element={<DashboardRoute><Feed /></DashboardRoute>} />
+            <Route path="/search" element={<DashboardRoute><SearchPage /></DashboardRoute>} />
+            <Route path="/settings" element={<DashboardRoute><SettingsPage /></DashboardRoute>} />
+            <Route path="/preferences" element={<DashboardRoute><Preferences /></DashboardRoute>} />
+            <Route path="/chat/:roomName" element={<DashboardRoute><Chat /></DashboardRoute>} />
         </Routes>
     );
 }

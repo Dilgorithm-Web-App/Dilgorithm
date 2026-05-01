@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
             setUser({ token: response.data.access });
-            navigate('/feed'); 
+            navigate('/home');
         } catch (error) {
             alert('Login failed. Check your credentials.');
         }

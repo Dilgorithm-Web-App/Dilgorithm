@@ -1,68 +1,99 @@
-import { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
+import './Chat.css';
 
 export const Chat = () => {
-    const { roomName } = useParams(); 
-    const { user } = useContext(AuthContext);
+    const { roomName } = useParams();
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const socketRef = useRef(null);
+    const endRef = useRef(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        // Connect to the Django WebSocket server
-        // Note: We use 127.0.0.1 to match your server's current running state
-        socketRef.current = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${roomName}/`);
+    // Mock contacts for sidebar
+    const contacts = [
+        { name: 'Amna Rahman', status: 'Online now', id: '1' },
+        { name: 'Anusha Butt', status: 'Sent a message - 3hrs', id: '2' },
+        { name: 'Sarah Mitchell', status: 'Seen at 8:07', id: '3' },
+        { name: 'Emily Johnson', status: 'Hey! How are you?', id: '4' },
+        { name: 'Lisa Chen', status: 'She sent a funny meme', id: '5' },
+        { name: 'Maya Patel', status: 'Thanks for the help', id: '6' },
+    ];
 
+    const COLORS = ['#E57373', '#64B5F6', '#81C784', '#BA68C8', '#FFB74D', '#4DD0E1'];
+    const displayName = roomName.replace('room_', 'User ');
+
+    useEffect(() => {
+        socketRef.current = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${roomName}/`);
         socketRef.current.onmessage = (e) => {
             const data = JSON.parse(e.data);
-            if (data.error) {
-                alert("Security Block: " + data.error); // Handles profanity/bot filtering
-            } else {
-                setMessages((prev) => [...prev, { sender: data.sender, text: data.message }]);
-            }
+            if (data.error) alert("Security Block: " + data.error);
+            else setMessages(prev => [...prev, { sender: data.sender, text: data.message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
         };
-
-        socketRef.current.onclose = () => console.log("Chat socket closed");
-
-        return () => socketRef.current.close();
+        socketRef.current.onclose = () => console.log("Socket closed");
+        return () => socketRef.current?.close();
     }, [roomName]);
 
-    const sendMessage = (e) => {
+    useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+    const send = (e) => {
         e.preventDefault();
         if (input.trim() && socketRef.current) {
-            socketRef.current.send(JSON.stringify({
-                'message': input,
-                'sender': 'Me' 
-            }));
+            socketRef.current.send(JSON.stringify({ message: input, sender: 'Me' }));
             setInput('');
         }
     };
 
     return (
-        <div style={{ maxWidth: '600px', margin: '20px auto', padding: '20px', fontFamily: 'sans-serif' }}>
-            <button onClick={() => navigate('/feed')} style={{ marginBottom: '10px', cursor: 'pointer' }}>← Back to Feed</button>
-            <div style={{ backgroundColor: '#f9f9f9', padding: '15px', borderRadius: '10px', border: '1px solid #ddd' }}>
-                <h3>Chat Room: {roomName.replace('room_', 'User ')}</h3>
-                <div style={{ height: '350px', overflowY: 'auto', border: '1px solid #eee', padding: '10px', backgroundColor: '#fff', marginBottom: '15px' }}>
-                    {messages.map((msg, i) => (
-                        <div key={i} style={{ textAlign: msg.sender === 'Me' ? 'right' : 'left', margin: '10px 0' }}>
-                            <div style={{ display: 'inline-block', padding: '8px 12px', borderRadius: '15px', backgroundColor: msg.sender === 'Me' ? '#007bff' : '#e4e6eb', color: msg.sender === 'Me' ? '#fff' : '#000' }}>
-                                <strong>{msg.sender}:</strong> {msg.text}
-                            </div>
+        <div className="ch-layout">
+            {/* Contacts Panel */}
+            <div className="ch-contacts">
+                <h4 className="ch-contacts-title">Messages</h4>
+                {contacts.map((c, i) => (
+                    <div key={c.id} className={`ch-contact ${roomName === `room_${c.id}` ? 'ch-contact--active' : ''}`} onClick={() => navigate(`/chat/room_${c.id}`)}>
+                        <div className="ch-contact-av" style={{ background: COLORS[i % 6] }}>{c.name[0]}</div>
+                        <div className="ch-contact-info">
+                            <div className="ch-contact-name">{c.name}</div>
+                            <div className="ch-contact-status">{c.status}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Chat Area */}
+            <div className="ch-main">
+                <div className="ch-header">
+                    <div className="ch-header-left">
+                        <div className="ch-header-av" style={{ background: '#E57373' }}>{displayName[0]?.toUpperCase() || 'U'}</div>
+                        <div>
+                            <div className="ch-header-name">{displayName}</div>
+                            <div className="ch-header-status">Online now</div>
+                        </div>
+                    </div>
+                    <button className="ch-add-family">ADD FAMILY</button>
+                </div>
+
+                <div className="ch-messages">
+                    {messages.length === 0 && (
+                        <div className="ch-empty">
+                            <span style={{ fontSize: 36 }}>💬</span>
+                            <p>Start the conversation! Say hello.</p>
+                        </div>
+                    )}
+                    {messages.map((m, i) => (
+                        <div key={i} className={`ch-msg ${m.sender === 'Me' ? 'ch-msg--sent' : 'ch-msg--recv'}`}>
+                            <div className="ch-bubble">{m.text}</div>
+                            <div className="ch-time">{m.time}</div>
                         </div>
                     ))}
+                    <div ref={endRef} />
                 </div>
-                <form onSubmit={sendMessage} style={{ display: 'flex', gap: '10px' }}>
-                    <input 
-                        type="text" 
-                        value={input} 
-                        onChange={(e) => setInput(e.target.value)} 
-                        placeholder="Type a message..." 
-                        style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
-                    />
-                    <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Send</button>
+
+                <form className="ch-input-bar" onSubmit={send}>
+                    <input className="ch-input" type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="Message..." />
+                    <button type="submit" className="ch-send">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
                 </form>
             </div>
         </div>
