@@ -5,6 +5,8 @@ import { Preferences } from './pages/Preferences';
 import { AuthContext } from './AuthContext';
 import { useContext } from 'react';
 import { Chat } from './pages/Chat';
+import React, { useState, useEffect } from 'react';
+import api from './api'; // <-- Changed to match your folder structure
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);

@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react'; // Added useEffect
 import { AuthContext } from '../AuthContext';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,24 @@ export const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login } = useContext(AuthContext);
+
+    // --- NEW: CONNECTION STATUS STATE ---
+    const [status, setStatus] = useState("Checking backend...");
+    const [isConnected, setIsConnected] = useState(false);
+
+    // --- NEW: CONNECTION TEST LOGIC ---
+    useEffect(() => {
+        api.get('accounts/test/')
+            .then(response => {
+                setStatus("Connected to Dilgorithm Backend");
+                setIsConnected(true);
+            })
+            .catch(error => {
+                console.error("Connection failed:", error);
+                setStatus("Backend Connection Failed");
+                setIsConnected(false);
+            });
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -22,10 +40,19 @@ export const Login = () => {
                 <button type="submit">Log In</button>
             </form>
             <p>Need an account? <a href="/register">Register here</a>.</p>
+
+            {/* --- NEW: STATUS INDICATOR UI --- */}
+            <div style={{ 
+                marginTop: '30px', 
+                fontSize: '13px', 
+                color: isConnected ? '#27ae60' : '#c0392b',
+                fontWeight: 'bold'
+            }}>
+                ● {status}
+            </div>
         </div>
     );
 };
-
 export const Register = () => {
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
