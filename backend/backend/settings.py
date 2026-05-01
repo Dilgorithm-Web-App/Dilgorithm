@@ -88,8 +88,14 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'mssql',
+        'NAME': 'DilgorithmDB',     # The name of the database you will create in SSMS
+        'HOST': r'DESKTOP-3O20B06\SQLEXPRESS',        # Or your PC's specific SQL Server instance name
+        'PORT': '', 
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+            'unicode_results': True,
+        },
     }
 }
 
