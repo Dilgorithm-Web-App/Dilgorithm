@@ -43,9 +43,3 @@ class PreferencesView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         obj, created = Interest.objects.get_or_create(user=self.request.user)
         return obj
-
-
-from django.http import JsonResponse
-
-def test_api(request):
-    return JsonResponse({"message": "Success! The Dilgorithm Backend is talking to React."})

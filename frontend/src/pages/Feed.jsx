@@ -1,67 +1,92 @@
-import { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../AuthContext';
-import api from '../api';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../api';
+import './Feed.css';
+
+const COLORS = ['linear-gradient(135deg,#E57373,#EF5350)', 'linear-gradient(135deg,#64B5F6,#42A5F5)', 'linear-gradient(135deg,#81C784,#66BB6A)', 'linear-gradient(135deg,#BA68C8,#AB47BC)', 'linear-gradient(135deg,#FFB74D,#FFA726)', 'linear-gradient(135deg,#4DD0E1,#26C6DA)'];
 
 export const Feed = () => {
-    const { logout } = useContext(AuthContext);
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchMatches = async () => {
-            try {
-                const response = await api.get('accounts/feed/');
-                setMatches(response.data);
-                setLoading(false);
-            } catch (error) {
-                console.error("Failed to load feed:", error);
-                setLoading(false);
-            }
+        const fetch = async () => {
+            try { const r = await api.get('accounts/feed/'); setMatches(r.data); } catch (e) { console.error(e); }
+            setLoading(false);
         };
-        fetchMatches();
+        fetch();
     }, []);
 
+    const topMatches = matches.slice(0, 3);
+    const allMatches = matches;
+    const topScore = matches.length ? Math.max(...matches.map(m => m.compatibility_score || 0)) : 0;
+    const highCompat = matches.filter(m => (m.compatibility_score || 0) >= 70).length;
+    const avgScore = matches.length ? Math.round(matches.reduce((s, m) => s + (m.compatibility_score || 0), 0) / matches.length) : 0;
+
+    if (loading) return <div className="fd-loading"><div className="fd-spinner" /></div>;
+
     return (
-        <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
-                <h2 style={{ color: '#d32f2f' }}>Dilgorithm Feed</h2>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => navigate('/preferences')} style={{ padding: '8px 12px', cursor: 'pointer', borderRadius: '5px', border: '1px solid #ccc' }}>
-                        ⚙️ AI Preferences
-                    </button>
-                    <button onClick={logout} style={{ padding: '8px 12px', cursor: 'pointer', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '5px' }}>
-                        Logout
-                    </button>
-                </div>
+        <div className="fd-wrap">
+            {/* Title */}
+            <h2 className="fd-main-title">✨ AI Recommended Matches ✨</h2>
+            <p className="fd-subtitle">Personalized matches ranked by compatibility with your preferences</p>
+
+            {/* Stats */}
+            <div className="fd-stats">
+                <div className="fd-stat"><div className="fd-stat-num">{topScore}%</div><div className="fd-stat-label">Top Match Score</div></div>
+                <div className="fd-stat"><div className="fd-stat-num fd-stat-num--green">{highCompat}</div><div className="fd-stat-label">High Compatibility (70%+)</div></div>
+                <div className="fd-stat"><div className="fd-stat-num">{avgScore}%</div><div className="fd-stat-label">Average Match Score</div></div>
             </div>
 
-            {loading ? (
-                <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                    <p>Scanning profiles for compatibility...</p>
-                </div>
-            ) : matches.length === 0 ? (
-                <div style={{ textAlign: 'center', marginTop: '50px', color: '#666' }}>
-                    <h3>No matches found yet!</h3>
-                    <p>Try broadening your <strong>AI Preferences</strong> to see more people.</p>
-                </div>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
-                    {matches.map((match) => (
-                        <div key={match.id} style={{ border: '1px solid #ddd', borderRadius: '12px', padding: '20px', backgroundColor: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <h3 style={{ margin: '0' }}>{match.fullName || match.username}</h3>
-                                <span style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', padding: '4px 8px', borderRadius: '15px', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                                    {match.compatibility_score}% Match
-                                </span>
+            {/* Top 3 */}
+            {topMatches.length > 0 && (
+                <>
+                    <h3 className="fd-section-title">🏆 Top 3 Matches</h3>
+                    <div className="fd-top3">
+                        {topMatches.map((m, i) => (
+                            <div key={m.id} className="fd-card" style={{ animationDelay: `${i * .1}s` }}>
+                                <div className="fd-card-photo" style={{ background: COLORS[i] }}>
+                                    <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
+                                    {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
+                                    <button className="fd-fav">♡</button>
+                                </div>
+                                <div className="fd-card-body">
+                                    <h4 className="fd-card-name">{m.fullName || m.username}{m.age ? `, ${m.age}` : ''}</h4>
+                                    {m.location && <p className="fd-card-meta">📍 {m.location}</p>}
+                                    {m.education && <p className="fd-card-meta">🎓 {m.education}</p>}
+                                    {m.bio && <p className="fd-card-meta">💼 {m.bio}</p>}
+                                    <div className="fd-card-reason">
+                                        <div className="fd-reason-title">Why this match:</div>
+                                        <div className="fd-reason-text">Age preference match</div>
+                                    </div>
+                                    <button className="fd-view-btn" onClick={() => navigate(`/chat/room_${m.id}`)}>View Profile</button>
+                                </div>
                             </div>
-                            <p style={{ color: '#555', fontSize: '0.9rem', margin: '15px 0' }}>{match.bio || "No bio available."}</p>
-                            <button 
-                                onClick={() => navigate(`/chat/room_${match.id}`)}
-                                style={{ width: '100%', padding: '12px', cursor: 'pointer', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
-                                Start Chat
-                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {/* All Matches */}
+            <h3 className="fd-section-title" style={{ marginTop: 32 }}>All Recommended Matches</h3>
+            {allMatches.length === 0 ? (
+                <div className="fd-empty"><span style={{ fontSize: 40 }}>💔</span><p>No matches found. Broaden your preferences!</p></div>
+            ) : (
+                <div className="fd-grid">
+                    {allMatches.map((m, i) => (
+                        <div key={m.id} className="fd-card" style={{ animationDelay: `${i * .06}s` }}>
+                            <div className="fd-card-photo" style={{ background: COLORS[i % 6] }}>
+                                <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
+                                {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
+                                <button className="fd-fav">♡</button>
+                            </div>
+                            <div className="fd-card-body">
+                                <h4 className="fd-card-name">{m.fullName || m.username}{m.age ? `, ${m.age}` : ''}</h4>
+                                {m.location && <p className="fd-card-meta">📍 {m.location}</p>}
+                                {m.bio && <p className="fd-card-meta">💼 {m.bio}</p>}
+                                <button className="fd-view-btn" onClick={() => navigate(`/chat/room_${m.id}`)}>View Profile</button>
+                            </div>
                         </div>
                     ))}
                 </div>

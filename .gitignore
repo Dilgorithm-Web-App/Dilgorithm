@@ -53,8 +53,7 @@ frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 frontend/pnpm-debug.log*
-**/__pycache__/
-**/*.pyc
+
 # =========================
 # Logs
 # =========================
