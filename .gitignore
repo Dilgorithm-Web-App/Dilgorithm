@@ -1,0 +1,60 @@
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.cursor/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS / Misc
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Backend (Django / Python)
+# =========================
+backend/venv/
+backend/.venv/
+backend/env/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+backend/**/*.py[cod]
+backend/.Python
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.coverage
+backend/htmlcov/
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/staticfiles/
+backend/media/
+
+# =========================
+# Frontend (React / Node)
+# =========================
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.next/
+frontend/coverage/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# =========================
+# Logs
+# =========================
+*.log
