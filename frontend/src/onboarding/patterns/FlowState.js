@@ -1,14 +1,17 @@
 class StepState {
-    constructor(index) {
+    constructor(index, totalSteps) {
         this.index = index;
+        this.totalSteps = totalSteps;
     }
 
     next() {
-        return FLOW_STATES[Math.min(this.index + 1, FLOW_STATES.length - 1)];
+        const nextIndex = Math.min(this.index + 1, this.totalSteps - 1);
+        return new StepState(nextIndex, this.totalSteps);
     }
 
     previous() {
-        return FLOW_STATES[Math.max(this.index - 1, 0)];
+        const prevIndex = Math.max(this.index - 1, 0);
+        return new StepState(prevIndex, this.totalSteps);
     }
 
     value() {
@@ -16,28 +19,8 @@ class StepState {
     }
 }
 
-class Step1LocationState extends StepState {
-    constructor() { super(0); }
-}
-class Step2ProfessionState extends StepState {
-    constructor() { super(1); }
-}
-class Step3EducationState extends StepState {
-    constructor() { super(2); }
-}
-class Step4SectState extends StepState {
-    constructor() { super(3); }
-}
-class Step5FinalState extends StepState {
-    constructor() { super(4); }
-}
-
-const FLOW_STATES = [
-    new Step1LocationState(),
-    new Step2ProfessionState(),
-    new Step3EducationState(),
-    new Step4SectState(),
-    new Step5FinalState(),
-];
-
-export const getInitialState = () => FLOW_STATES[0];
+export const getInitialState = (initialIndex = 0, totalSteps = 1) => {
+    const safeTotal = Math.max(1, totalSteps);
+    const safeIndex = Math.min(Math.max(initialIndex, 0), safeTotal - 1);
+    return new StepState(safeIndex, safeTotal);
+};

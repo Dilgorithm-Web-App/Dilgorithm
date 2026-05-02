@@ -6,7 +6,8 @@ class UserFormDataStore {
             return UserFormDataStore.instance;
         }
         this.data = ONBOARDING_STEPS.reduce((acc, step) => {
-            acc[step.field] = '';
+            const value = step.defaultValue;
+            acc[step.field] = Array.isArray(value) ? [...value] : (value ?? '');
             return acc;
         }, {});
         this.listeners = new Set();

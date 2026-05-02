@@ -11,6 +11,7 @@ const PAGE_META = {
     '/search': 'For You Page',
     '/settings': 'Settings',
     '/preferences': 'Settings',
+    '/about-us': 'About Us',
 };
 
 export const DashboardLayout = ({ children }) => {

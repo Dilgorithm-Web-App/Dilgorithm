@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BaseStepLayout } from '../onboarding/layouts/BaseStepLayout';
 import { StepFactory } from '../onboarding/factory/StepFactory';
 import { TOTAL_STEPS } from '../onboarding/config/stepsConfig';
@@ -7,6 +7,8 @@ import './OnboardingPage.css';
 
 export const OnboardingPage = () => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const stepParam = searchParams.get('step') || 'profession';
     const {
         stepIndex,
         currentStep,
@@ -22,6 +24,8 @@ export const OnboardingPage = () => {
         previousStep,
     } = useOnboardingLogic({
         onComplete: () => navigate('/home'),
+        initialStepKey: stepParam,
+        onStepKeyChange: (nextKey) => setSearchParams({ step: nextKey }, { replace: true }),
     });
 
     const StepComponent = StepFactory.create(currentStep.key);
@@ -30,11 +34,11 @@ export const OnboardingPage = () => {
         <div className="ob-page">
             <BaseStepLayout
                 stepLabel={`Step ${stepIndex + 1} / ${TOTAL_STEPS}`}
-                completedLabel={currentStep.completedLabel}
+                completedLabel={`${currentStep.completedPercent}% COMPLETED`}
                 progress={progress}
                 isConfirmDisabled={!isCurrentValid}
                 isNextDisabled={!isCurrentValid}
-                onConfirm={confirmStep}
+                onConfirm={nextStep}
                 onNext={nextStep}
                 onPrevious={previousStep}
                 isFirst={isFirstStep}
