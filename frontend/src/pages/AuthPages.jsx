@@ -316,7 +316,6 @@ export const Register = () => {
                         style={{
                             width: '110px',
                             objectFit: 'contain',
-                            opacity: 0.9,
                             mixBlendMode: 'normal',
                             justifySelf: 'start',
                         }}
@@ -478,6 +477,7 @@ export const Register = () => {
 export const RegisterCredentials2FA = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { setSession } = useContext(AuthContext);
     const profile = location.state?.profile;
 
     const [email, setEmail] = useState('');
@@ -514,12 +514,16 @@ export const RegisterCredentials2FA = () => {
     const verifyOtp = async (e) => {
         e.preventDefault();
         try {
-            await api.post('accounts/register/verify-2fa/', {
+            const { data } = await api.post('accounts/register/verify-2fa/', {
                 email,
                 otp,
             });
-            alert('Registration complete. You can now log in.');
-            navigate('/login');
+            if (data.access) {
+                setSession(data.access, data.refresh, { email: data.email });
+                navigate('/register/photo', { replace: true });
+            } else {
+                navigate('/login');
+            }
         } catch (error) {
             setStatusMessage(error.response?.data?.detail || 'OTP verification failed.');
         }

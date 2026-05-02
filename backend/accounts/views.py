@@ -490,7 +490,17 @@ class RegisterVerify2FAView(APIView):
         ensure_user_records(user)
         cache.delete(f"register_2fa:{email}")
 
-        return Response({"detail": "Registration verified and completed."}, status=status.HTTP_201_CREATED)
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                "detail": "Registration verified and completed.",
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "email": user.email,
+                "username": user.username,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class ToggleFavoriteView(APIView):
     permission_classes = (IsAuthenticated,)
