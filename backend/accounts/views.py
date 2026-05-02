@@ -14,8 +14,8 @@ import json
 import random
 import urllib.parse
 import urllib.request
-from .models import CustomUser, Interest
-from .serializers import RegisterSerializer, MatchFeedSerializer, InterestSerializer
+from .models import CustomUser, Interest, UserProfile
+from .serializers import RegisterSerializer, MatchFeedSerializer, InterestSerializer, UserProfileSerializer
 from .ai_engine import get_ranked_matches
 
 class RegisterView(generics.CreateAPIView):
@@ -54,6 +54,19 @@ class PreferencesView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         obj, created = Interest.objects.get_or_create(user=self.request.user)
+        return obj
+
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        default_name = self.request.user.username or self.request.user.email.split('@')[0]
+        obj, _ = UserProfile.objects.get_or_create(
+            user=self.request.user,
+            defaults={'fullName': default_name}
+        )
         return obj
 
 
