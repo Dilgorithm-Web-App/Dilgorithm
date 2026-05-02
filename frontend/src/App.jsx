@@ -118,10 +118,13 @@ import { Preferences } from './pages/Preferences';
 import { AuthContext } from './AuthContext';
 import { useContext } from 'react';
 import { Chat } from './pages/Chat';
+import { ChatListPage } from './pages/ChatListPage';
 import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AboutUsPage } from './pages/AboutUsPage';
+import { AppConfigurationPage } from './pages/AppConfigurationPage';
+import { EngagementModerationPage } from './pages/EngagementModerationPage';
 import { DashboardLayout } from './components/DashboardLayout';
 import { OnboardingPage } from './pages/OnboardingPage';
 
@@ -151,7 +154,10 @@ function App() {
             <Route path="/search" element={<DashboardRoute><SearchPage /></DashboardRoute>} />
             <Route path="/settings" element={<DashboardRoute><SettingsPage /></DashboardRoute>} />
             <Route path="/preferences" element={<DashboardRoute><Preferences /></DashboardRoute>} />
-            <Route path="/about-us" element={<AboutUsPage />} />
+            <Route path="/engagement-moderation" element={<DashboardRoute><EngagementModerationPage /></DashboardRoute>} />
+            <Route path="/app-configuration" element={<DashboardRoute><AppConfigurationPage /></DashboardRoute>} />
+            <Route path="/about-us" element={<DashboardRoute><AboutUsPage /></DashboardRoute>} />
+            <Route path="/chat-list" element={<DashboardRoute><ChatListPage /></DashboardRoute>} />
             <Route path="/chat/:roomName" element={<DashboardRoute><Chat /></DashboardRoute>} />
             <Route path="/onboarding" element={<OnboardingPage />} />
         </Routes>

@@ -1,0 +1,93 @@
+.ac-wrap {
+    display: flex;
+    justify-content: center;
+}
+
+.ac-card {
+    width: min(760px, 100%);
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 22px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+    padding: 28px;
+}
+
+.ac-back-btn {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #333;
+    padding: 6px 10px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.ac-back-btn:hover {
+    border-color: #8b1a1a;
+    color: #8b1a1a;
+}
+
+.ac-title {
+    margin: 0;
+    font-size: 28px;
+    color: #8b1a1a;
+}
+
+.ac-subtitle {
+    margin: 8px 0 22px;
+    color: #666;
+}
+
+.ac-section + .ac-section {
+    margin-top: 24px;
+}
+
+.ac-heading {
+    margin: 0 0 10px;
+    font-size: 18px;
+    color: #333;
+}
+
+.ac-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f2f2f2;
+    color: #444;
+}
+
+.ac-row-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+}
+
+.ac-select {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: #fff;
+}
+
+.ac-actions {
+    margin-top: 18px;
+}
+
+.ac-save-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: #8b1a1a;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ac-status {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: #666;
+}

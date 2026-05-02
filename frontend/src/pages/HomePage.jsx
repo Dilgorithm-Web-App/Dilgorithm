@@ -14,7 +14,8 @@ export const HomePage = () => {
         const fetchData = async () => {
             try {
                 const res = await api.get('accounts/feed/');
-                const data = res.data || [];
+                const raw = res.data;
+                const data = Array.isArray(raw) ? raw : [];
                 setConnections(data.slice(0, 3));
                 setSuggestions(data.slice(3, 5));
             } catch (err) {
