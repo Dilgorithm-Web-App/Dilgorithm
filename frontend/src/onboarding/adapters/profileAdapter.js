@@ -1,3 +1,4 @@
+/** Adapter pattern: maps onboarding form shape → UserProfile / identityDocs API payload. */
 export const adaptOnboardingToProfilePayload = (formData) => {
     const profileSummary = [
         `Location: ${formData.location || '-'}`,

@@ -1,5 +1,6 @@
 import { ONBOARDING_STEPS } from '../config/stepsConfig';
 
+/** Singleton pattern: one store instance; constructor returns existing instance on repeat `new`. */
 class UserFormDataStore {
     constructor() {
         if (UserFormDataStore.instance) {
