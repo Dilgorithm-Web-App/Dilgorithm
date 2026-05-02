@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Q
-from .models import CustomUser, Interest, UserProfile
+from .models import CustomUser, Interest, UserProfile, FamilyConnection
 from .models import ChatMessage
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -22,10 +22,24 @@ class MatchFeedSerializer(serializers.ModelSerializer):
     fullName = serializers.CharField(source='profile.fullName', read_only=True)
     bio = serializers.CharField(source='profile.bio', read_only=True)
     images = serializers.JSONField(source='profile.images', read_only=True)
+    location = serializers.CharField(source='profile.location', read_only=True)
+    sect = serializers.CharField(source='profile.sect', read_only=True)
+    education = serializers.CharField(source='profile.education', read_only=True)
+    caste = serializers.CharField(source='profile.caste', read_only=True)
+    is_favorite = serializers.SerializerMethodField()
     
     class Meta:
         model = CustomUser
-        fields = ('id', 'email', 'fullName', 'bio', 'images')
+        fields = ('id', 'email', 'fullName', 'bio', 'images', 'location', 'sect', 'education', 'caste', 'is_favorite')
+
+    def get_is_favorite(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            try:
+                return obj in request.user.profile.favorites.all()
+            except Exception:
+                return False
+        return False
 
 class InterestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -46,6 +60,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'location',
             'maritalStatus',
             'sect',
+            'caste',
         )
 
 
@@ -90,3 +105,11 @@ class ChatContactSerializer(serializers.ModelSerializer):
 
     def get_roomName(self, obj):
         return f'room_{obj.id}'
+
+class FamilyConnectionSerializer(serializers.ModelSerializer):
+    linkedMemberEmail = serializers.EmailField(source='linkedMember.email', read_only=True)
+    linkedMemberName = serializers.CharField(source='linkedMember.profile.fullName', read_only=True)
+
+    class Meta:
+        model = FamilyConnection
+        fields = ('id', 'linkedMember', 'linkedMemberEmail', 'linkedMemberName', 'memberRole', 'permissions')

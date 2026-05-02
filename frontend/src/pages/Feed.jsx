@@ -8,6 +8,7 @@ const COLORS = ['linear-gradient(135deg,#E57373,#EF5350)', 'linear-gradient(135d
 export const Feed = () => {
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [favorites, setFavorites] = useState(new Set());
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -17,6 +18,20 @@ export const Feed = () => {
         };
         fetch();
     }, []);
+
+    const toggleFavorite = async (id) => {
+        try {
+            const res = await api.post('accounts/favorites/toggle/', { target_id: id });
+            setFavorites(prev => {
+                const next = new Set(prev);
+                if (res.data.is_favorite) next.add(id);
+                else next.delete(id);
+                return next;
+            });
+        } catch (err) {
+            console.error('Failed to toggle favorite', err);
+        }
+    };
 
     const topMatches = matches.slice(0, 3);
     const allMatches = matches;
@@ -49,7 +64,13 @@ export const Feed = () => {
                                 <div className="fd-card-photo" style={{ background: COLORS[i] }}>
                                     <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
                                     {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
-                                    <button className="fd-fav">♡</button>
+                                    <button 
+                                        className="fd-fav" 
+                                        onClick={() => toggleFavorite(m.id)} 
+                                        style={{ color: favorites.has(m.id) ? '#E57373' : 'inherit' }}
+                                    >
+                                        {favorites.has(m.id) ? '♥' : '♡'}
+                                    </button>
                                 </div>
                                 <div className="fd-card-body">
                                     <h4 className="fd-card-name">{m.fullName || m.username}{m.age ? `, ${m.age}` : ''}</h4>
@@ -58,7 +79,7 @@ export const Feed = () => {
                                     {m.bio && <p className="fd-card-meta">💼 {m.bio}</p>}
                                     <div className="fd-card-reason">
                                         <div className="fd-reason-title">Why this match:</div>
-                                        <div className="fd-reason-text">Age preference match</div>
+                                        <div className="fd-reason-text">{m.match_reason || "Based on your shared interests and preferences"}</div>
                                     </div>
                                     <button className="fd-view-btn" onClick={() => navigate(`/chat/room_${m.id}`)}>View Profile</button>
                                 </div>
@@ -79,7 +100,13 @@ export const Feed = () => {
                             <div className="fd-card-photo" style={{ background: COLORS[i % 6] }}>
                                 <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
                                 {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
-                                <button className="fd-fav">♡</button>
+                                <button 
+                                    className="fd-fav" 
+                                    onClick={() => toggleFavorite(m.id)} 
+                                    style={{ color: favorites.has(m.id) ? '#E57373' : 'inherit' }}
+                                >
+                                    {favorites.has(m.id) ? '♥' : '♡'}
+                                </button>
                             </div>
                             <div className="fd-card-body">
                                 <h4 className="fd-card-name">{m.fullName || m.username}{m.age ? `, ${m.age}` : ''}</h4>

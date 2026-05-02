@@ -14,7 +14,6 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.email
 
-# ... (your CustomUser code should still be above this) ...
 
 class UserProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
@@ -27,7 +26,8 @@ class UserProfile(models.Model):
     location = models.CharField(max_length=255, blank=True, default='')
     maritalStatus = models.CharField(max_length=100, blank=True, default='')
     sect = models.CharField(max_length=100, blank=True, default='')
-
+    caste = models.CharField(max_length=100, blank=True, default='')
+    favorites = models.ManyToManyField(CustomUser, related_name='favorited_by', blank=True)
     def __str__(self):
         return f"Profile of {self.user.email}"
 

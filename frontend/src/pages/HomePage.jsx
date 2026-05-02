@@ -8,16 +8,29 @@ const AVATAR_COLORS = ['#E57373', '#64B5F6', '#81C784', '#BA68C8', '#FFB74D', '#
 export const HomePage = () => {
     const [connections, setConnections] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
+    const [interests, setInterests] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await api.get('accounts/feed/');
-                const raw = res.data;
+                const [feedRes, prefRes] = await Promise.all([
+                    api.get('accounts/feed/'),
+                    api.get('accounts/preferences/')
+                ]);
+                const raw = feedRes.data;
                 const data = Array.isArray(raw) ? raw : [];
+                
                 setConnections(data.slice(0, 3));
                 setSuggestions(data.slice(3, 5));
+                
+                const prefs = prefRes.data || {};
+                const interestData = prefs.interestList || prefs.interests || [];
+                if (Array.isArray(interestData) && interestData.length > 0) {
+                    setInterests(interestData.map(int => ({ label: int, emoji: '✨' })));
+                } else {
+                    setInterests([]);
+                }
             } catch (err) {
                 console.error('Failed to load home data:', err);
             }
@@ -25,13 +38,7 @@ export const HomePage = () => {
         fetchData();
     }, []);
 
-    const interests = [
-        { label: 'Sports', emoji: '🏀' },
-        { label: 'Fitness', emoji: '💪' },
-        { label: 'Food', emoji: '🍔' },
-        { label: 'Movies', emoji: '🎬' },
-        { label: 'Travel', emoji: '✈️' },
-    ];
+    // Interests are now fetched dynamically
 
     return (
         <div className="hp-grid">
@@ -54,7 +61,11 @@ export const HomePage = () => {
             <div className="hp-right">
                 <div className="hp-card hp-card--int">
                     <h3 className="hp-title">My Interests</h3>
-                    <div className="hp-tags">{interests.map(t => <span key={t.label} className="hp-tag">{t.emoji} {t.label}</span>)}</div>
+                    {interests.length === 0 ? (
+                        <p className="hp-empty">No interests set yet.</p>
+                    ) : (
+                        <div className="hp-tags">{interests.map(t => <span key={t.label} className="hp-tag">{t.emoji} {t.label}</span>)}</div>
+                    )}
                 </div>
                 <div className="hp-card hp-card--sug">
                     <h3 className="hp-title">Suggested Connections</h3>
