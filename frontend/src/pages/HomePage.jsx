@@ -14,11 +14,17 @@ export const HomePage = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+<<<<<<< HEAD
                 const [feedRes, prefRes] = await Promise.all([
                     api.get('accounts/feed/'),
                     api.get('accounts/preferences/')
                 ]);
                 const data = feedRes.data || [];
+=======
+                const res = await api.get('accounts/feed/');
+                const raw = res.data;
+                const data = Array.isArray(raw) ? raw : [];
+>>>>>>> bdf09bd5600ed89b2033b5a3b865a8d3e4f9373d
                 setConnections(data.slice(0, 3));
                 setSuggestions(data.slice(3, 5));
                 

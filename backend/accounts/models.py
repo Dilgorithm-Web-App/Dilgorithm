@@ -58,3 +58,16 @@ class Report(models.Model):
 
     def __str__(self):
         return f"Report by {self.reporter.email} against {self.reportedUser.email}"
+
+
+class ChatMessage(models.Model):
+    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='messages_sent')
+    recipient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='messages_received')
+    message = models.TextField()
+    createdAt = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['createdAt']
+
+    def __str__(self):
+        return f"{self.sender.email} -> {self.recipient.email}"

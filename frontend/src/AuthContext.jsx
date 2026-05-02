@@ -26,7 +26,11 @@ export const AuthProvider = ({ children }) => {
             navigate('/home');
             return true;
         } catch (error) {
-            alert('Login failed. Check your credentials.');
+            const detail =
+                error.response?.data?.detail ||
+                (typeof error.response?.data === 'string' ? error.response.data : null) ||
+                error.message;
+            alert(detail ? `Login failed: ${detail}` : 'Login failed. Check your credentials and CAPTCHA.');
             return false;
         }
     };
