@@ -6,9 +6,12 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from django.db import models
+from django.core.cache import cache
+from django.core.mail import send_mail
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import json
+import random
 import urllib.parse
 import urllib.request
 from .models import CustomUser, Interest
@@ -167,3 +170,87 @@ class GoogleLoginView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class RegisterInit2FAView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        email = (request.data.get("email") or "").strip().lower()
+        password = request.data.get("password") or ""
+        username = (request.data.get("username") or "").strip()
+
+        if not email or not password or not username:
+            return Response({"detail": "Email, password, and username are required."}, status=status.HTTP_400_BAD_REQUEST)
+        if len(password) < 8:
+            return Response({"detail": "Password must be at least 8 characters."}, status=status.HTTP_400_BAD_REQUEST)
+        if CustomUser.objects.filter(email=email).exists():
+            return Response({"detail": "An account with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        base_username = username.replace(" ", "_")[:30] or email.split("@")[0][:30]
+        unique_username = base_username
+        counter = 1
+        while CustomUser.objects.filter(username=unique_username).exists():
+            suffix = f"_{counter}"
+            unique_username = f"{base_username[: 30 - len(suffix)]}{suffix}"
+            counter += 1
+
+        otp = f"{random.randint(0, 999999):06d}"
+        cache.set(
+            f"register_2fa:{email}",
+            {
+                "email": email,
+                "password": password,
+                "username": unique_username,
+                "otp": otp,
+            },
+            timeout=600,
+        )
+
+        try:
+            send_mail(
+                subject="Dilgorithm verification code",
+                message=f"Your verification code is: {otp}",
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@dilgorithm.local"),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception:
+            return Response(
+                {
+                    "detail": "Could not send OTP email. Check SMTP settings in backend/.env and try again."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response(
+            {"detail": "Verification code sent. Enter OTP to complete registration."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class RegisterVerify2FAView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        email = (request.data.get("email") or "").strip().lower()
+        otp = (request.data.get("otp") or "").strip()
+        cached = cache.get(f"register_2fa:{email}")
+
+        if not cached:
+            return Response({"detail": "OTP expired or not requested."}, status=status.HTTP_400_BAD_REQUEST)
+        if cached.get("otp") != otp:
+            return Response({"detail": "Invalid OTP code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = RegisterSerializer(
+            data={
+                "email": cached["email"],
+                "username": cached["username"],
+                "password": cached["password"],
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        cache.delete(f"register_2fa:{email}")
+
+        return Response({"detail": "Registration verified and completed."}, status=status.HTTP_201_CREATED)

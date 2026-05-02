@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Login, Register } from './pages/AuthPages';
+import { Login, Register, RegisterCredentials2FA } from './pages/AuthPages';
 import { Feed } from './pages/Feed';
 import { Preferences } from './pages/Preferences';
 import { AuthContext } from './AuthContext';
@@ -9,6 +9,8 @@ import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { DashboardLayout } from './components/DashboardLayout';
+import React, { useState, useEffect } from 'react';
+import api from './api'; // <-- Changed to match your folder structure
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);
@@ -27,6 +29,7 @@ function App() {
             <Route path="/" element={<Navigate to="/login" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/register/credentials" element={<RegisterCredentials2FA />} />
 
             {/* Protected Routes with Dashboard Layout */}
             <Route path="/home" element={<DashboardRoute><HomePage /></DashboardRoute>} />
