@@ -16,6 +16,26 @@
 .ch-main { display: flex; flex-direction: column; }
 .ch-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #eee; }
 .ch-header-left { display: flex; align-items: center; gap: 10px; }
+.ch-back-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.ch-back-btn:hover {
+    background: #fafafa;
+    border-color: #8B1A1A;
+    color: #8B1A1A;
+}
 .ch-header-av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; }
 .ch-header-name { font-size: 15px; font-weight: 700; color: #1a1a1a; }
 .ch-header-status { font-size: 11px; color: #4caf50; }
@@ -39,5 +59,6 @@
 .ch-send:hover { background: #333; }
 
 .ch-empty { text-align: center; padding: 60px 0; color: #bbb; }
+.ch-error { margin: 0 0 8px; color: #a11; font-size: 13px; }
 @keyframes chIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 768px) { .ch-layout { grid-template-columns: 1fr; } .ch-contacts { display: none; } }

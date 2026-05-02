@@ -6,6 +6,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.core.cache import cache
 from django.core.mail import send_mail
 from google.oauth2 import id_token
@@ -14,14 +15,38 @@ import json
 import random
 import urllib.parse
 import urllib.request
-from .models import CustomUser, Interest, UserProfile
-from .serializers import RegisterSerializer, MatchFeedSerializer, InterestSerializer, UserProfileSerializer
+from .models import CustomUser, Interest, UserProfile, FamilyConnection, Report, ChatMessage
+from .serializers import (
+    RegisterSerializer,
+    MatchFeedSerializer,
+    InterestSerializer,
+    UserProfileSerializer,
+    ChatMessageSerializer,
+    ChatContactSerializer,
+)
 from .ai_engine import get_ranked_matches
+
+
+def ensure_user_records(user):
+    default_name = user.username or user.email.split('@')[0]
+    UserProfile.objects.get_or_create(
+        user=user,
+        defaults={"fullName": default_name},
+    )
+    Interest.objects.get_or_create(
+        user=user,
+        defaults={"interestList": [], "partnerCriteria": {}},
+    )
+
 
 class RegisterView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        ensure_user_records(user)
 
 class MatchFeedView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
@@ -68,6 +93,136 @@ class ProfileView(generics.RetrieveUpdateAPIView):
             defaults={'fullName': default_name}
         )
         return obj
+
+
+class AppConfigurationView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def _get_profile(self, user):
+        default_name = user.username or user.email.split('@')[0]
+        profile, _ = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={'fullName': default_name}
+        )
+        return profile
+
+    def get(self, request, *args, **kwargs):
+        profile = self._get_profile(request.user)
+        docs = profile.identityDocs if isinstance(profile.identityDocs, dict) else {}
+        app_config = docs.get("appConfig", {})
+        permissions = app_config.get("permissions", {})
+
+        return Response(
+            {
+                "language": app_config.get("language", "English"),
+                "permissions": {
+                    "location": bool(permissions.get("location", True)),
+                    "notifications": bool(permissions.get("notifications", True)),
+                    "camera": bool(permissions.get("camera", True)),
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def put(self, request, *args, **kwargs):
+        profile = self._get_profile(request.user)
+
+        language = (request.data.get("language") or "English").strip()[:50]
+        incoming_permissions = request.data.get("permissions") or {}
+        permissions = {
+            "location": bool(incoming_permissions.get("location", True)),
+            "notifications": bool(incoming_permissions.get("notifications", True)),
+            "camera": bool(incoming_permissions.get("camera", True)),
+        }
+
+        docs = profile.identityDocs if isinstance(profile.identityDocs, dict) else {}
+        docs["appConfig"] = {
+            "language": language or "English",
+            "permissions": permissions,
+        }
+        profile.identityDocs = docs
+        profile.save(update_fields=["identityDocs"])
+
+        return Response(docs["appConfig"], status=status.HTTP_200_OK)
+
+
+class EngagementSummaryView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        sent_requests = FamilyConnection.objects.filter(user=user).count()
+        received_requests = FamilyConnection.objects.filter(linkedMember=user).count()
+        blocked_accounts = (
+            Report.objects.filter(reporter=user, verdict__in=["Suspended", "Banned"])
+            .values("reportedUser")
+            .distinct()
+            .count()
+        )
+
+        return Response(
+            {
+                "sentRequests": sent_requests,
+                "receivedRequests": received_requests,
+                "matchHistory": sent_requests + received_requests,
+                "blockedAccounts": blocked_accounts,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChatContactsView(generics.ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ChatContactSerializer
+
+    def get_queryset(self):
+        return CustomUser.objects.exclude(id=self.request.user.id).order_by("id")
+
+
+class ChatMessagesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get_contact(self, request, contact_id):
+        contact = CustomUser.objects.filter(id=contact_id).exclude(id=request.user.id).first()
+        if not contact:
+            return None
+        return contact
+
+    def get(self, request, contact_id, *args, **kwargs):
+        contact = self.get_contact(request, contact_id)
+        if not contact:
+            return Response({"detail": "Contact not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        messages = ChatMessage.objects.filter(
+            Q(sender=request.user, recipient=contact) | Q(sender=contact, recipient=request.user)
+        ).order_by("createdAt")
+        serializer = ChatMessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, contact_id, *args, **kwargs):
+        contact = self.get_contact(request, contact_id)
+        if not contact:
+            return Response({"detail": "Contact not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        message = (request.data.get("message") or "").strip()
+        if not message:
+            return Response({"detail": "Message cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profanity_list = ["badword1", "badword2", "hate", "scam"]
+        lower_msg = message.lower()
+        if any(word in lower_msg for word in profanity_list):
+            return Response(
+                {"detail": "Message blocked: Violates community guidelines."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        chat_message = ChatMessage.objects.create(
+            sender=request.user,
+            recipient=contact,
+            message=message,
+        )
+        serializer = ChatMessageSerializer(chat_message)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 def verify_recaptcha(captcha_token):
@@ -172,6 +327,7 @@ class GoogleLoginView(APIView):
             )
             user.isVerified = token_info.get("email_verified", False)
             user.save(update_fields=["isVerified"])
+            ensure_user_records(user)
 
         refresh = RefreshToken.for_user(user)
         return Response(
@@ -263,7 +419,8 @@ class RegisterVerify2FAView(APIView):
             }
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
+        ensure_user_records(user)
         cache.delete(f"register_2fa:{email}")
 
         return Response({"detail": "Registration verified and completed."}, status=status.HTTP_201_CREATED)
