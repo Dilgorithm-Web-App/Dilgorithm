@@ -1,7 +1,7 @@
 import { useState, useContext, useRef } from 'react';
 import { AuthContext } from '../AuthContext';
 import api from '../api';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import ReCAPTCHA from 'react-google-recaptcha';
 import parchmentBg from '../assets/parchment_bg.png';
@@ -226,36 +226,347 @@ export const Login = () => {
 };
 
 export const Register = () => {
-    const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [gender, setGender] = useState('');
+    const [dob, setDob] = useState('');
+    const [height, setHeight] = useState('');
+    const [weight, setWeight] = useState('');
     const navigate = useNavigate();
+    const registerPalette = {
+        pageBg: '#fff9fb',
+        panelBg: '#fffdfd',
+        panelBorder: '#f1e6eb',
+        label: '#4b4a55',
+        inputBg: '#ffffff',
+        buttonBg: '#b74247',
+        progressTrack: '#ece6ea',
+        progressDot: '#a81212',
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        navigate('/register/credentials', {
+            state: {
+                profile: {
+                    name,
+                    gender,
+                    dob,
+                    height,
+                    weight,
+                },
+            },
+        });
+    };
+
+    return (
+        <div
+            style={{
+                minHeight: '100vh',
+                width: '100%',
+                backgroundColor: registerPalette.pageBg,
+                padding: '26px 20px 48px',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+            }}
+        >
+            <div style={{ width: '100%', maxWidth: '920px', marginBottom: '10px', textAlign: 'left' }}>
+                <button
+                    type="button"
+                    onClick={() => navigate('/login')}
+                    style={{
+                        border: '1px solid #d8cfd4',
+                        borderRadius: '999px',
+                        backgroundColor: '#fff',
+                        color: '#4b4a55',
+                        padding: '8px 14px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                    }}
+                >
+                    ← Back
+                </button>
+            </div>
+
+            <div
+                style={{
+                    width: '100%',
+                    maxWidth: '920px',
+                    backgroundColor: registerPalette.panelBg,
+                    border: `2px solid ${registerPalette.panelBorder}`,
+                    borderRadius: '14px',
+                    padding: '26px 30px 32px',
+                    boxSizing: 'border-box',
+                    boxShadow: '0 10px 28px rgba(76, 52, 18, 0.15)',
+                }}
+            >
+                <div
+                    style={{
+                        width: '100%',
+                        display: 'grid',
+                        gridTemplateColumns: '180px 1fr 180px',
+                        alignItems: 'start',
+                        marginBottom: '4px',
+                    }}
+                >
+                    <img
+                        src={dgHeartLogo}
+                        alt="Dilgorithm logo"
+                        style={{
+                            width: '110px',
+                            objectFit: 'contain',
+                            opacity: 0.9,
+                            mixBlendMode: 'normal',
+                            justifySelf: 'start',
+                        }}
+                    />
+                    <div style={{ marginTop: '-6px' }}>
+                        <div
+                            style={{
+                                width: '100%',
+                                maxWidth: '480px',
+                                margin: '0 auto 8px',
+                                height: '20px',
+                                borderRadius: '999px',
+                                backgroundColor: registerPalette.progressTrack,
+                                position: 'relative',
+                            }}
+                        >
+                            <span
+                                style={{
+                                    position: 'absolute',
+                                    left: '8px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    width: '14px',
+                                    height: '14px',
+                                    borderRadius: '50%',
+                                    backgroundColor: registerPalette.progressDot,
+                                }}
+                            />
+                        </div>
+                        <div
+                            style={{
+                                textAlign: 'center',
+                                fontWeight: 700,
+                                fontSize: '34px',
+                                lineHeight: 1.1,
+                                color: registerPalette.label,
+                                letterSpacing: '0.2px',
+                            }}
+                        >
+                            Register
+                        </div>
+                    </div>
+                    <div />
+                </div>
+
+                <form
+                    onSubmit={handleSubmit}
+                    style={{
+                        display: 'grid',
+                        gap: '14px',
+                        width: '100%',
+                        maxWidth: '620px',
+                        margin: '0 auto',
+                    }}
+                >
+                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>NAME:</label>
+                        <input
+                            type="text"
+                            placeholder=""
+                            onChange={e => setName(e.target.value)}
+                            required
+                            style={{
+                                padding: '12px 14px',
+                                borderRadius: '999px',
+                                border: '1px solid #ece6ea',
+                                backgroundColor: registerPalette.inputBg,
+                                boxSizing: 'border-box',
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>GENDER:</label>
+                        <input
+                            type="text"
+                            placeholder=""
+                            onChange={e => setGender(e.target.value)}
+                            style={{
+                                padding: '12px 14px',
+                                borderRadius: '999px',
+                                border: '1px solid #ece6ea',
+                                backgroundColor: registerPalette.inputBg,
+                                boxSizing: 'border-box',
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>DOB:</label>
+                        <input
+                            type="text"
+                            placeholder=""
+                            onChange={e => setDob(e.target.value)}
+                            style={{
+                                padding: '12px 14px',
+                                borderRadius: '999px',
+                                border: '1px solid #ece6ea',
+                                backgroundColor: registerPalette.inputBg,
+                                boxSizing: 'border-box',
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>HEIGHT:</label>
+                        <input
+                            type="text"
+                            placeholder=""
+                            onChange={e => setHeight(e.target.value)}
+                            style={{
+                                padding: '12px 14px',
+                                borderRadius: '999px',
+                                border: '1px solid #ece6ea',
+                                backgroundColor: registerPalette.inputBg,
+                                boxSizing: 'border-box',
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>WEIGHT:</label>
+                        <input
+                            type="text"
+                            placeholder=""
+                            onChange={e => setWeight(e.target.value)}
+                            style={{
+                                padding: '12px 14px',
+                                borderRadius: '999px',
+                                border: '1px solid #ece6ea',
+                                backgroundColor: registerPalette.inputBg,
+                                boxSizing: 'border-box',
+                            }}
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        style={{
+                            marginTop: '24px',
+                            justifySelf: 'center',
+                            border: 'none',
+                            borderRadius: '999px',
+                            padding: '12px 42px',
+                            backgroundColor: registerPalette.buttonBg,
+                            color: '#fff',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        QABOOL HAI
+                    </button>
+                </form>
+
+                <p style={{ marginTop: '14px', textAlign: 'center' }}>
+                    Already have an account? <a href="/login">Log in here</a>.
+                </p>
+            </div>
+        </div>
+    );
+};
+
+export const RegisterCredentials2FA = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const profile = location.state?.profile;
+
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [otp, setOtp] = useState('');
+    const [otpSent, setOtpSent] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
+
+    const submitCredentials = async (e) => {
+        e.preventDefault();
+        if (!profile?.name) {
+            navigate('/register');
+            return;
+        }
+        if (password !== confirmPassword) {
+            setStatusMessage('Passwords do not match.');
+            return;
+        }
         try {
-            await api.post('accounts/register/', { email, username, password });
-            alert('Registration Successful! Please log in.');
+            await api.post('accounts/register/init-2fa/', {
+                email,
+                password,
+                username: profile.name,
+                profile,
+            });
+            setOtpSent(true);
+            setStatusMessage('OTP sent. Check your email and enter the 6-digit code.');
+        } catch (error) {
+            setStatusMessage(error.response?.data?.detail || 'Could not start 2FA registration.');
+        }
+    };
+
+    const verifyOtp = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('accounts/register/verify-2fa/', {
+                email,
+                otp,
+            });
+            alert('Registration complete. You can now log in.');
             navigate('/login');
         } catch (error) {
-            // This prints the exact error from Django into your browser console
-            console.error("Django says:", error.response?.data);
-
-            // This pops up the real error on your screen
-            alert("Real Error: " + JSON.stringify(error.response?.data || error.message));
+            setStatusMessage(error.response?.data?.detail || 'OTP verification failed.');
         }
     };
 
     return (
-        <div style={{ padding: '50px', textAlign: 'center' }}>
-            <h2>Register for Dilgorithm</h2>
-            <form onSubmit={handleSubmit}>
-                <input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} required /><br /><br />
-                <input type="text" placeholder="Username" onChange={e => setUsername(e.target.value)} required /><br /><br />
-                <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} required /><br /><br />
-                <button type="submit">Register</button>
-            </form>
-            <p>Already have an account? <a href="/login">Log in here</a>.</p>
+        <div style={{ minHeight: '100vh', background: '#fff9fb', padding: '40px 20px', boxSizing: 'border-box' }}>
+            <div style={{ maxWidth: '620px', margin: '0 auto', background: '#fffdfd', border: '1px solid #f1e6eb', borderRadius: '14px', padding: '24px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/register', { state: { profile } })}
+                        style={{
+                            border: '1px solid #d8cfd4',
+                            borderRadius: '999px',
+                            backgroundColor: '#fff',
+                            color: '#4b4a55',
+                            padding: '8px 14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        ← Back
+                    </button>
+                </div>
+                <h2 style={{ textAlign: 'center', marginTop: 0 }}>Register - Step 2 (Credentials + 2FA)</h2>
+
+                {!otpSent ? (
+                    <form onSubmit={submitCredentials} style={{ display: 'grid', gap: '12px' }}>
+                        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ece6ea' }} />
+                        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ece6ea' }} />
+                        <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ece6ea' }} />
+                        <button type="submit" style={{ border: 'none', borderRadius: '999px', padding: '12px 22px', background: '#b74247', color: '#fff', fontWeight: 700 }}>
+                            Send OTP
+                        </button>
+                    </form>
+                ) : (
+                    <form onSubmit={verifyOtp} style={{ display: 'grid', gap: '12px' }}>
+                        <input type="text" placeholder="Enter 6-digit OTP" value={otp} onChange={(e) => setOtp(e.target.value)} required style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ece6ea' }} />
+                        <button type="submit" style={{ border: 'none', borderRadius: '999px', padding: '12px 22px', background: '#b74247', color: '#fff', fontWeight: 700 }}>
+                            Verify OTP & Create Account
+                        </button>
+                    </form>
+                )}
+
+                {statusMessage && <p style={{ marginTop: '12px', color: '#7f1d1d' }}>{statusMessage}</p>}
+            </div>
         </div>
     );
 };
