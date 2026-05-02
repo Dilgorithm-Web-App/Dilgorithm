@@ -13,15 +13,46 @@ export const AuthProvider = ({ children }) => {
         if (token) setUser({ token });
     }, []);
 
-    const login = async (email, password) => {
+    const login = async (email, password, captchaToken) => {
         try {
-            const response = await api.post('accounts/login/', { email, password });
+            const response = await api.post('accounts/login/', {
+                email,
+                password,
+                captcha_token: captchaToken,
+            });
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
             setUser({ token: response.data.access });
             navigate('/home');
+            return true;
         } catch (error) {
             alert('Login failed. Check your credentials.');
+            return false;
+        }
+    };
+
+    const loginWithGoogle = async (credentialResponse, captchaToken) => {
+        const credential = credentialResponse?.credential;
+        if (!credential) {
+            alert('Google sign-in did not return a valid credential.');
+            return false;
+        }
+        try {
+            const response = await api.post('accounts/google-login/', {
+                credential,
+                captcha_token: captchaToken,
+            });
+            localStorage.setItem('access_token', response.data.access);
+            localStorage.setItem('refresh_token', response.data.refresh);
+            setUser({
+                token: response.data.access,
+                email: response.data.email,
+            });
+            navigate('/home');
+            return true;
+        } catch (error) {
+            alert(error.response?.data?.detail || 'Google sign-in failed.');
+            return false;
         }
     };
 
@@ -33,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, login, loginWithGoogle, logout }}>
             {children}
         </AuthContext.Provider>
     );
