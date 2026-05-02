@@ -22,7 +22,12 @@ class UserProfile(models.Model):
     bio = models.TextField(blank=True, null=True)
     images = models.JSONField(default=list, blank=True) # Stores URLs or paths to images
     identityDocs = models.JSONField(default=dict, blank=True) # Stores verification docs
-    
+    profession = models.CharField(max_length=255, blank=True, default='')
+    education = models.CharField(max_length=255, blank=True, default='')
+    location = models.CharField(max_length=255, blank=True, default='')
+    maritalStatus = models.CharField(max_length=100, blank=True, default='')
+    sect = models.CharField(max_length=100, blank=True, default='')
+
     def __str__(self):
         return f"Profile of {self.user.email}"
 

@@ -36,7 +36,17 @@ class InterestSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('fullName', 'bio', 'images', 'identityDocs')
+        fields = (
+            'fullName',
+            'bio',
+            'images',
+            'identityDocs',
+            'profession',
+            'education',
+            'location',
+            'maritalStatus',
+            'sect',
+        )
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):

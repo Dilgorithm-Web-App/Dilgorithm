@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import './AboutUsPage.css';
 
 const InstagramIcon = (props) => (
@@ -24,9 +25,14 @@ const XIcon = (props) => (
 );
 
 export const AboutUsPage = () => {
+    const navigate = useNavigate();
+
     return (
         <div className="au-wrap">
             <div className="au-phone">
+                <button type="button" className="au-back" onClick={() => navigate('/settings')}>
+                    Back
+                </button>
                 <h1 className="au-title">ABOUT US</h1>
 
                 <div className="au-grid">
