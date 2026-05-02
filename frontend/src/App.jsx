@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Login, Register } from './pages/AuthPages';
+import { Login, Register, RegisterCredentials2FA } from './pages/AuthPages';
 import { Feed } from './pages/Feed';
 import { Preferences } from './pages/Preferences';
 import { AuthContext } from './AuthContext';
@@ -30,6 +30,7 @@ function App() {
             <Route path="/" element={<Navigate to="/login" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/register/credentials" element={<RegisterCredentials2FA />} />
 
             {/* Protected Routes with Dashboard Layout */}
             <Route path="/home" element={<DashboardRoute><HomePage /></DashboardRoute>} />
