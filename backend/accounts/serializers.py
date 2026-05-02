@@ -29,3 +29,9 @@ class InterestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Interest
         fields = ('interestList', 'partnerCriteria')
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ('fullName', 'bio', 'images', 'identityDocs')

@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import RegisterView, MatchFeedView, PreferencesView # <-- Ensure PreferencesView is here!
+from .views import RegisterView, MatchFeedView, PreferencesView, ProfileView
 
 urlpatterns = [
     # UC-01: Registration
@@ -17,4 +17,5 @@ urlpatterns = [
     
     # UC-12 & UC-13: User AI Preferences
     path('preferences/', PreferencesView.as_view(), name='preferences'),
+    path('profile/', ProfileView.as_view(), name='profile'),
 ]

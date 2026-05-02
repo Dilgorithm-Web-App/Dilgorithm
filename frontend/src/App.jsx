@@ -9,10 +9,12 @@ import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { DashboardLayout } from './components/DashboardLayout';
+import { OnboardingPage } from './pages/OnboardingPage';
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);
-    return user ? children : <Navigate to="/login" />;
+    const hasToken = Boolean(localStorage.getItem('access_token'));
+    return (user || hasToken) ? children : <Navigate to="/login" />;
 };
 
 const DashboardRoute = ({ children }) => (
@@ -35,6 +37,7 @@ function App() {
             <Route path="/settings" element={<DashboardRoute><SettingsPage /></DashboardRoute>} />
             <Route path="/preferences" element={<DashboardRoute><Preferences /></DashboardRoute>} />
             <Route path="/chat/:roomName" element={<DashboardRoute><Chat /></DashboardRoute>} />
+            <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
         </Routes>
     );
 }
