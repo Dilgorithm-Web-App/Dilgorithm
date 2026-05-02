@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import logoHeart from './assets/logo-heart.jpg';
 import logoText from './assets/logo-text.png';
+import EngagementView from './EngagementView'; // Adjust the path if you put it in a folder
 
 
 // 1. SINGLETON / ITERATOR PATTERN (Config)
@@ -40,18 +41,6 @@ const AccountView = () => (
     <h3 style={{...sectionTitle, marginTop: '30px', fontSize: '16px'}}>About Me:</h3>
     <input style={linearInput} placeholder="Height:" /><input style={linearInput} placeholder="Weight:" />
     <input style={linearInput} placeholder="Email:" /><input style={linearInput} placeholder="Edit Interests:" />
-  </div>
-);
-
-const EngagementView = () => (
-  <div style={cardStyle}>
-    <h3 style={sectionTitle}>Your Activity</h3>
-    <div style={cleanRow}><span>Sent Requests</span><span>❯</span></div>
-    <div style={cleanRow}><span>Received Requests</span><span>❯</span></div>
-    <div style={cleanRow}><span>Match History</span><span>❯</span></div>
-    <h3 style={{...sectionTitle, marginTop: '40px'}}>Blocked Accounts</h3>
-    <p style={labelLight}>Blocked Accounts: 0</p>
-    <button style={secondaryPill}>Manage Blocked List</button>
   </div>
 );
 
@@ -113,7 +102,10 @@ const ViewFactory = ({ activeTab, showAbout, setShowAbout, setActiveTab }) => {
   
   switch (activeTab) {
     case 'Account & Profile': return <AccountView />;
-    case 'Engagement & Moderation': return <EngagementView />;
+    
+    // NOW IT USES THE IMPORTED COMPONENT
+    case 'Engagement & Moderation': return <EngagementView />; 
+    
     case 'App Configuration': return <ConfigView />;
     case 'Support & Legal': return <SupportView onShowAbout={() => setShowAbout(true)} />;
     case 'Logout': return <LogoutView onCancel={() => setActiveTab('Account & Profile')} />;
