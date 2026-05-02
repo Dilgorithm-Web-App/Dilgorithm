@@ -4,6 +4,8 @@ import api from '../api';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import ReCAPTCHA from 'react-google-recaptcha';
+import parchmentBg from '../assets/parchment_bg.png';
+import dgHeartLogo from '../assets/dg_heart_logo.png';
 
 export const Login = () => {
     const [email, setEmail] = useState('');
@@ -45,91 +47,180 @@ export const Login = () => {
     };
 
     return (
-        <div style={{ padding: '50px', textAlign: 'center', maxWidth: '560px', margin: '0 auto' }}>
-            <h2>Login to Dilgorithm</h2>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="email"
-                    placeholder="Email"
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    style={{ width: '100%', maxWidth: '360px', padding: '10px' }}
-                />
-                <br />
-                <br />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    style={{ width: '100%', maxWidth: '360px', padding: '10px' }}
-                />
-                <br />
-                <br />
-
-                <p style={{ marginBottom: '10px', fontWeight: 600, letterSpacing: '0.4px' }}>
-                    REGISTER ACCOUNT
-                </p>
+        <div
+            style={{
+                minHeight: '200vh',
+                overflowY: 'auto',
+                width: '100%',
+                backgroundImage: `url(${parchmentBg})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundAttachment: 'fixed',
+                padding: '0',
+            }}
+        >
+            <div
+                style={{
+                    width: '100%',
+                    maxWidth: '900px',
+                    margin: '0 auto',
+                    backgroundColor: 'transparent',
+                    padding: '0 24px 40px',
+                    boxSizing: 'border-box',
+                    textAlign: 'center',
+                }}
+            >
                 <div
                     style={{
+                        minHeight: '100vh',
                         display: 'flex',
-                        justifyContent: 'center',
                         alignItems: 'center',
-                        gap: '14px',
-                        flexWrap: 'wrap',
-                        marginBottom: '18px',
+                        justifyContent: 'center',
+                        backgroundColor: 'transparent',
                     }}
                 >
-                    {googleClientId ? (
-                        <div
+                    <img
+                        src={dgHeartLogo}
+                        alt="Dilgorithm logo"
+                        style={{
+                            width: '100%',
+                            maxWidth: '720px',
+                            height: 'auto',
+                            objectFit: 'contain',
+                            mixBlendMode: 'darken',
+                        }}
+                    />
+                </div>
+                <div
+                    style={{
+                        minHeight: '100vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <h2 style={{ marginTop: 0, marginBottom: '24px' }}>Login to Dilgorithm</h2>
+                    <form
+                        onSubmit={handleSubmit}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            width: '100%',
+                        }}
+                    >
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        onChange={e => setEmail(e.target.value)}
+                        required
+                        style={{
+                            width: '100%',
+                            maxWidth: '440px',
+                            padding: '12px 14px',
+                            borderRadius: '10px',
+                            border: '1px solid #8f7147',
+                            backgroundColor: 'rgba(255, 248, 235, 0.75)',
+                            boxSizing: 'border-box',
+                        }}
+                    />
+                    <div style={{ height: '14px' }} />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        onChange={e => setPassword(e.target.value)}
+                        required
+                        style={{
+                            width: '100%',
+                            maxWidth: '440px',
+                            padding: '12px 14px',
+                            borderRadius: '10px',
+                            border: '1px solid #8f7147',
+                            backgroundColor: 'rgba(255, 248, 235, 0.75)',
+                            boxSizing: 'border-box',
+                        }}
+                    />
+                    <div style={{ height: '22px' }} />
+                    <p style={{ marginTop: 0, marginBottom: '18px' }}>
+                        Need an account? <a href="/register">Register here</a>.
+                    </p>
+
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '14px',
+                            flexWrap: 'wrap',
+                            marginBottom: '18px',
+                        }}
+                    >
+                        {googleClientId ? (
+                            <div
+                                style={{
+                                    border: '1px solid #b8a27e',
+                                    borderRadius: '999px',
+                                    padding: '2px 10px',
+                                    backgroundColor: 'rgba(255, 248, 235, 0.75)',
+                                }}
+                            >
+                                <GoogleLogin
+                                    onSuccess={handleGoogleSuccess}
+                                    onError={() => setStatusMessage('Google sign-in failed. Please try again.')}
+                                    text="signin_with"
+                                    shape="pill"
+                                    theme="outline"
+                                    size="medium"
+                                />
+                            </div>
+                        ) : (
+                            <div style={{ fontSize: '13px', color: '#b91c1c' }}>
+                                Set VITE_GOOGLE_CLIENT_ID in frontend/.env
+                            </div>
+                        )}
+
+                        {recaptchaSiteKey ? (
+                            <ReCAPTCHA
+                                ref={recaptchaRef}
+                                sitekey={recaptchaSiteKey}
+                                onChange={(token) => {
+                                    setCaptchaToken(token);
+                                    if (token) setStatusMessage('');
+                                }}
+                                size="normal"
+                            />
+                        ) : (
+                            <div style={{ fontSize: '13px', color: '#b91c1c' }}>
+                                Set VITE_RECAPTCHA_SITE_KEY in frontend/.env
+                            </div>
+                        )}
+                    </div>
+
+                    {statusMessage && (
+                        <p style={{ color: '#b91c1c', marginTop: '0', marginBottom: '12px', fontSize: '14px' }}>
+                            {statusMessage}
+                        </p>
+                    )}
+
+                        <button
+                            type="submit"
                             style={{
-                                border: '1px solid #d1d5db',
+                                border: 'none',
                                 borderRadius: '999px',
-                                padding: '2px 10px',
-                                backgroundColor: '#fff',
+                                padding: '12px 30px',
+                                backgroundColor: '#7d5b5b',
+                                color: '#fff',
+                                fontWeight: 700,
+                                cursor: 'pointer',
                             }}
                         >
-                            <GoogleLogin
-                                onSuccess={handleGoogleSuccess}
-                                onError={() => setStatusMessage('Google sign-in failed. Please try again.')}
-                                text="signin_with"
-                                shape="pill"
-                                theme="outline"
-                                size="medium"
-                            />
-                        </div>
-                    ) : (
-                        <div style={{ fontSize: '13px', color: '#b91c1c' }}>
-                            Set VITE_GOOGLE_CLIENT_ID in frontend/.env
-                        </div>
-                    )}
-
-                    {recaptchaSiteKey ? (
-                        <ReCAPTCHA
-                            ref={recaptchaRef}
-                            sitekey={recaptchaSiteKey}
-                            onChange={(token) => {
-                                setCaptchaToken(token);
-                                if (token) setStatusMessage('');
-                            }}
-                            size="normal"
-                        />
-                    ) : (
-                        <div style={{ fontSize: '13px', color: '#b91c1c' }}>
-                            Set VITE_RECAPTCHA_SITE_KEY in frontend/.env
-                        </div>
-                    )}
+                            Qabool Hai
+                        </button>
+                    </form>
                 </div>
-
-                {statusMessage && (
-                    <p style={{ color: '#b91c1c', marginTop: '0', marginBottom: '12px', fontSize: '14px' }}>
-                        {statusMessage}
-                    </p>
-                )}
-
-                <button type="submit">Log In</button>
-            </form>
-            <p>Need an account? <a href="/register">Register here</a>.</p>
+            </div>
         </div>
     );
 };
