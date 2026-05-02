@@ -6,6 +6,7 @@ import { MaritalStatusStep } from '../components/steps/MaritalStatusStep';
 import { InterestsStep } from '../components/steps/InterestsStep';
 import { TimeSpanStep } from '../components/steps/TimeSpanStep';
 
+/** Factory pattern: encapsulates which component is instantiated for each step key. */
 const STEP_COMPONENTS = {
     location: LocationStep,
     profession: ProfessionStep,

@@ -113,7 +113,8 @@
     grid-row: 2;
 }
 
-.ob-question h3 {
+.ob-question h3,
+.ob-question .ob-step-template__title {
     margin: 0 0 18px 0;
     color: rgba(15, 13, 14, 0.73);
     text-align: center;

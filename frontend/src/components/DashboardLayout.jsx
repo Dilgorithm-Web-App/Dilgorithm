@@ -1,6 +1,7 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
+import api from '../api';
 import dgLogo from '../assets/dg_heart_logo.png';
 import brandLogo from '../assets/dilgorithm_logo.png';
 import './DashboardLayout.css';
@@ -17,9 +18,34 @@ const PAGE_META = {
 };
 
 export const DashboardLayout = ({ children }) => {
-    const { logout } = useContext(AuthContext);
+    const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
+    const [avatarUrl, setAvatarUrl] = useState(null);
+    const [avatarInitial, setAvatarInitial] = useState('U');
+
+    useEffect(() => {
+        if (!user?.token) return undefined;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { data } = await api.get('accounts/profile/');
+                if (cancelled) return;
+                const imgs = Array.isArray(data.images) ? data.images : [];
+                setAvatarUrl(imgs.length > 0 ? imgs[0] : null);
+                const name = (data.fullName || '').trim();
+                setAvatarInitial(name ? name.charAt(0).toUpperCase() : 'U');
+            } catch {
+                if (!cancelled) {
+                    setAvatarUrl(null);
+                    setAvatarInitial('U');
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.token, location.pathname]);
 
     const path = location.pathname;
     const isChat = path.startsWith('/chat');
@@ -61,7 +87,18 @@ export const DashboardLayout = ({ children }) => {
                         <img src={brandLogo} alt="Dilgorithm" className="dl-header-brand" />
                     </div>
                     <div className="dl-header-right">
-                        <div className="dl-header-avatar" onClick={() => navigate('/settings')}>U</div>
+                        <button
+                            type="button"
+                            className="dl-header-avatar"
+                            onClick={() => navigate('/settings')}
+                            aria-label="Open settings"
+                        >
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt="" className="dl-header-avatar-img" />
+                            ) : (
+                                avatarInitial
+                            )}
+                        </button>
                     </div>
                 </header>
                 <main className="dl-content">{children}</main>
