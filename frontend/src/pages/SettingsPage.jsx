@@ -11,7 +11,7 @@ export const SettingsPage = () => {
         { label: 'Account &\nProfile', action: () => navigate('/preferences') },
         { label: 'Engagement &\nModeration', action: () => {} },
         { label: 'App\nConfiguration', action: () => navigate('/preferences') },
-        { label: 'Support &\nLegal', action: () => {} },
+        { label: 'Support &\nLegal', action: () => navigate('/about-us') },
         { label: 'Logout', action: logout, danger: true },
     ];
 

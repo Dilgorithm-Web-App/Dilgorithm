@@ -1,0 +1,141 @@
+.au-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 18px 0 28px;
+}
+
+/* Mimics the narrow, scrollable About Us frame */
+.au-phone {
+  width: min(390px, 92vw);
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  padding: 20px 18px 14px;
+  box-shadow: none;
+  border: 0;
+}
+
+.au-title {
+  margin: 6px 0 18px;
+  text-align: center;
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: rgba(157, 0, 0, 0.9);
+}
+
+.au-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.au-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.05);
+}
+
+.au-card--services {
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+}
+
+.au-card-title {
+  margin: 0 0 10px;
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: rgba(157, 0, 0, 0.75);
+}
+
+.au-card-body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(17, 17, 17, 0.72);
+}
+
+.au-list {
+  margin: 0;
+  padding-left: 18px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(17, 17, 17, 0.72);
+}
+
+.au-footer {
+  margin-top: 16px;
+  padding-top: 10px;
+}
+
+.au-social-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+  justify-items: center;
+  margin-bottom: 10px;
+}
+
+.au-social {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.au-social-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(17, 17, 17, 0.65);
+}
+
+.au-social-svg {
+  display: block;
+}
+
+.au-social-text {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 8.5px;
+  line-height: 1.15;
+  letter-spacing: 0.4px;
+  color: rgba(17, 17, 17, 0.6);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.au-footer-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  color: rgba(17, 17, 17, 0.55);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+@media (max-width: 360px) {
+  .au-grid {
+    grid-template-columns: 1fr;
+  }
+  .au-footer-links {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
