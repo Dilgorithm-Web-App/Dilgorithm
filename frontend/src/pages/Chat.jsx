@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
-<<<<<<< HEAD
-=======
 import { CHAT_AVATAR_COLORS } from '../data/chatContacts';
->>>>>>> bdf09bd5600ed89b2033b5a3b865a8d3e4f9373d
 import './Chat.css';
 
 export const Chat = () => {
@@ -17,31 +14,11 @@ export const Chat = () => {
     const navigate = useNavigate();
     const contactId = Number((roomName || '').replace('room_', ''));
 
-<<<<<<< HEAD
-    const [contacts, setContacts] = useState([]);
-
-    useEffect(() => {
-        const fetchContacts = async () => {
-            try {
-                const res = await api.get('accounts/feed/');
-                const data = res.data || [];
-                setContacts(data.map(user => ({
-                    name: user.fullName || user.username || 'User',
-                    status: 'Active recently',
-                    id: user.id
-                })));
-            } catch (err) {
-                console.error("Failed to fetch contacts", err);
-            }
-        };
-        fetchContacts();
-    }, []);
-=======
+    const [toastMsg, setToastMsg] = useState('');
     const activeContact = useMemo(
         () => contacts.find((c) => Number(c.id) === contactId),
         [contacts, contactId]
     );
->>>>>>> bdf09bd5600ed89b2033b5a3b865a8d3e4f9373d
 
     const activeIndex = useMemo(
         () => contacts.findIndex((c) => Number(c.id) === contactId),
@@ -154,17 +131,21 @@ export const Chat = () => {
                             <div className="ch-header-status">{headerStatus}</div>
                         </div>
                     </div>
-<<<<<<< HEAD
-                    <button className="ch-add-family" onClick={() => alert("Family invite sent to your connections!")}>ADD FAMILY</button>
-=======
-                    <button type="button" className="ch-add-family">
+                    <button 
+                        type="button" 
+                        className="ch-add-family"
+                        onClick={() => {
+                            setToastMsg(`Family invite sent to ${displayName}!`);
+                            setTimeout(() => setToastMsg(''), 3000);
+                        }}
+                    >
                         ADD FAMILY
                     </button>
->>>>>>> bdf09bd5600ed89b2033b5a3b865a8d3e4f9373d
                 </div>
 
                 <div className="ch-messages">
                     {error ? <p className="ch-error">{error}</p> : null}
+                    {toastMsg ? <div style={{ background: '#4CAF50', color: 'white', padding: '10px', borderRadius: '4px', textAlign: 'center', marginBottom: '10px', animation: 'fadeIn 0.3s ease' }}>{toastMsg}</div> : null}
                     {messages.length === 0 && (
                         <div className="ch-empty">
                             <span style={{ fontSize: 36 }}>💬</span>

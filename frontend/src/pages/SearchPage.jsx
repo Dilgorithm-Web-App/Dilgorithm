@@ -28,10 +28,10 @@ export const SearchPage = () => {
             const q = query.toLowerCase();
             r = r.filter(p => (p.fullName || p.username || '').toLowerCase().includes(q) || (p.bio || '').toLowerCase().includes(q));
         }
-        if (filters.sect) r = r.filter(p => (p.sect || '').toLowerCase() === filters.sect.toLowerCase());
+        if (filters.sect) r = r.filter(p => (p.sect || '').toLowerCase().includes(filters.sect.toLowerCase()));
         if (filters.location) r = r.filter(p => (p.location || '').toLowerCase().includes(filters.location.toLowerCase()));
-        if (filters.education) r = r.filter(p => (p.education || '').toLowerCase() === filters.education.toLowerCase());
-        if (filters.caste) r = r.filter(p => (p.caste || '').toLowerCase() === filters.caste.toLowerCase());
+        if (filters.education) r = r.filter(p => (p.education || '').toLowerCase().includes(filters.education.toLowerCase()));
+        if (filters.caste) r = r.filter(p => (p.caste || '').toLowerCase().includes(filters.caste.toLowerCase()));
         setFiltered(r);
     }, [query, filters, profiles]);
 
