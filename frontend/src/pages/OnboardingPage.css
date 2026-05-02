@@ -8,15 +8,20 @@
 
 .ob-shell {
     width: min(1100px, 95vw);
-    min-height: 650px;
+    height: min(650px, 90vh);
+    max-height: 90vh;
     padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .ob-header {
     display: flex;
     align-items: flex-start;
     gap: 28px;
-    margin-bottom: 46px;
+    margin-bottom: 28px;
 }
 
 .ob-brand-wrap {
@@ -113,7 +118,7 @@
     color: rgba(15, 13, 14, 0.73);
     text-align: center;
     font-family: "Plus Jakarta Sans", Inter, sans-serif;
-    font-size: clamp(32px, 4vw, 48px);
+    font-size: clamp(24px, 3vw, 40px);
     font-style: normal;
     font-weight: 600;
 }
@@ -124,6 +129,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    flex: 1;
 }
 
 .ob-input {
@@ -138,22 +145,92 @@
     outline: none;
 }
 
+.ob-pills {
+    width: min(980px, 92vw);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px 18px;
+    margin-top: 12px;
+}
+
+.ob-pill {
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.75);
+    color: rgba(15, 13, 14, 0.6);
+    font-family: "Plus Jakarta Sans", Inter, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.06) inset;
+}
+
+.ob-pill.is-selected {
+    background: rgba(157, 0, 0, 0.14);
+    color: rgba(157, 0, 0, 0.85);
+}
+
+.ob-hint {
+    margin-top: 14px;
+    font-family: Inter, sans-serif;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.ob-dual {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ob-block {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ob-block--spaced {
+    margin-top: 26px;
+}
+
+.ob-h3 {
+    margin: 0 0 14px 0;
+}
+
+.ob-pills--tight {
+    width: min(520px, 92vw);
+    gap: 12px 16px;
+    margin-top: 0;
+}
+
+.ob-pill--soft {
+    padding: 9px 18px;
+    font-weight: 500;
+    color: rgba(15, 13, 14, 0.55);
+    background: rgba(255, 255, 255, 0.7);
+}
+
 .ob-footer {
     display: flex;
     justify-content: center;
-    margin-top: 260px;
+    margin-top: auto;
+    padding-top: 18px;
 }
 
 .ob-footer button {
     border: 0;
     border-radius: 52px;
-    width: 266px;
-    height: 79px;
+    width: min(266px, 70vw);
+    height: 64px;
     cursor: pointer;
     background: rgba(157, 0, 0, 0.73);
     color: #fff;
     font-family: "Plus Jakarta Sans", Inter, sans-serif;
-    font-size: clamp(36px, 3vw, 48px);
+    font-size: clamp(22px, 2.6vw, 34px);
     font-style: normal;
     font-weight: 600;
 }
@@ -166,7 +243,7 @@
 @media (max-width: 768px) {
     .ob-shell {
         padding: 16px;
-        min-height: 100vh;
+        height: 92vh;
     }
     .ob-header {
         gap: 8px;
@@ -176,6 +253,6 @@
         font-size: 14px;
     }
     .ob-footer {
-        margin-top: 140px;
+        padding-top: 12px;
     }
 }
