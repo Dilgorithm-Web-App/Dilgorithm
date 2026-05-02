@@ -7,6 +7,8 @@ def calculate_compatibility_score(user_interest, candidate_interest):
     """
     score = 0.0
     
+    reasons = []
+    
     # 1. Compare Shared Interests (List intersection)
     user_list = set(user_interest.interestList)
     candidate_list = set(candidate_interest.interestList)
@@ -17,6 +19,8 @@ def calculate_compatibility_score(user_interest, candidate_interest):
     if user_list:
         match_percentage = len(shared_interests) / len(user_list)
         score += (match_percentage * 50)
+        if shared_interests:
+            reasons.append(f"Shared {len(shared_interests)} interest(s)")
         
     # 2. Check Partner Criteria Constraints (e.g., Sect, Age)
     user_criteria = user_interest.partnerCriteria
@@ -26,14 +30,18 @@ def calculate_compatibility_score(user_interest, candidate_interest):
     if user_criteria.get('sect') and candidate_criteria.get('sect'):
         if user_criteria.get('sect') == candidate_criteria.get('sect'):
             score += 30 # Heavy weight for religious alignment
+            reasons.append("Sect match")
             
     # Example constraint check: Location preference
     if user_criteria.get('location') and candidate_criteria.get('location'):
          if user_criteria.get('location') == candidate_criteria.get('location'):
              score += 20
+             reasons.append("Location match")
              
     # Cap score at 100
-    return min(score, 100.0)
+    final_score = min(score, 100.0)
+    reason_string = ", ".join(reasons) if reasons else "General compatibility"
+    return final_score, reason_string
 
 def get_ranked_matches(user):
     """
@@ -56,7 +64,7 @@ def get_ranked_matches(user):
     for candidate in candidates:
         candidate_interest = candidate.interests.first()
         if candidate_interest:
-            score = calculate_compatibility_score(user_interest, candidate_interest)
+            score, reason = calculate_compatibility_score(user_interest, candidate_interest)
             
             # Save the score to the database temporarily for the feed
             candidate_interest.compatibilityScore = score
@@ -67,7 +75,8 @@ def get_ranked_matches(user):
                 ranked_list.append({
                     'candidate_id': candidate.id,
                     'email': candidate.email,
-                    'score': score
+                    'score': score,
+                    'reason': reason
                 })
                 
     # Sort the list so the highest score is at the top (Index 0)

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import api from '../api';
 import './Chat.css';
 
 export const Chat = () => {
@@ -10,15 +11,24 @@ export const Chat = () => {
     const endRef = useRef(null);
     const navigate = useNavigate();
 
-    // Mock contacts for sidebar
-    const contacts = [
-        { name: 'Amna Rahman', status: 'Online now', id: '1' },
-        { name: 'Anusha Butt', status: 'Sent a message - 3hrs', id: '2' },
-        { name: 'Sarah Mitchell', status: 'Seen at 8:07', id: '3' },
-        { name: 'Emily Johnson', status: 'Hey! How are you?', id: '4' },
-        { name: 'Lisa Chen', status: 'She sent a funny meme', id: '5' },
-        { name: 'Maya Patel', status: 'Thanks for the help', id: '6' },
-    ];
+    const [contacts, setContacts] = useState([]);
+
+    useEffect(() => {
+        const fetchContacts = async () => {
+            try {
+                const res = await api.get('accounts/feed/');
+                const data = res.data || [];
+                setContacts(data.map(user => ({
+                    name: user.fullName || user.username || 'User',
+                    status: 'Active recently',
+                    id: user.id
+                })));
+            } catch (err) {
+                console.error("Failed to fetch contacts", err);
+            }
+        };
+        fetchContacts();
+    }, []);
 
     const COLORS = ['#E57373', '#64B5F6', '#81C784', '#BA68C8', '#FFB74D', '#4DD0E1'];
     const displayName = roomName.replace('room_', 'User ');
@@ -70,7 +80,7 @@ export const Chat = () => {
                             <div className="ch-header-status">Online now</div>
                         </div>
                     </div>
-                    <button className="ch-add-family">ADD FAMILY</button>
+                    <button className="ch-add-family" onClick={() => alert("Family invite sent to your connections!")}>ADD FAMILY</button>
                 </div>
 
                 <div className="ch-messages">

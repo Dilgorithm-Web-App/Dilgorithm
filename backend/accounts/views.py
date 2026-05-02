@@ -42,6 +42,7 @@ class MatchFeedView(generics.ListAPIView):
         response_data = serializer.data
         for i, item in enumerate(response_data):
             item['compatibility_score'] = ranked_data[i]['score']
+            item['match_reason'] = ranked_data[i]['reason']
             
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -267,3 +268,27 @@ class RegisterVerify2FAView(APIView):
         cache.delete(f"register_2fa:{email}")
 
         return Response({"detail": "Registration verified and completed."}, status=status.HTTP_201_CREATED)
+
+class ToggleFavoriteView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        target_id = request.data.get('target_id')
+        if not target_id:
+            return Response({"detail": "target_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            target_user = CustomUser.objects.get(id=target_id)
+            user_profile = request.user.profile
+            
+            if target_user in user_profile.favorites.all():
+                user_profile.favorites.remove(target_user)
+                return Response({"detail": "Removed from favorites", "is_favorite": False}, status=status.HTTP_200_OK)
+            else:
+                user_profile.favorites.add(target_user)
+                return Response({"detail": "Added to favorites", "is_favorite": True}, status=status.HTTP_200_OK)
+                
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

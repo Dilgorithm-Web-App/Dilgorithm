@@ -9,6 +9,7 @@ from .views import (
     GoogleLoginView,
     RegisterInit2FAView,
     RegisterVerify2FAView,
+    ToggleFavoriteView,
 )
 
 urlpatterns = [
@@ -21,4 +22,5 @@ urlpatterns = [
     path('feed/', MatchFeedView.as_view(), name='match_feed'),
     path('preferences/', PreferencesView.as_view(), name='preferences'),
     path('profile/', ProfileView.as_view(), name='profile'),
+    path('favorites/toggle/', ToggleFavoriteView.as_view(), name='toggle_favorite'),
 ]

@@ -58,7 +58,7 @@ export const Feed = () => {
                                     {m.bio && <p className="fd-card-meta">💼 {m.bio}</p>}
                                     <div className="fd-card-reason">
                                         <div className="fd-reason-title">Why this match:</div>
-                                        <div className="fd-reason-text">Age preference match</div>
+                                        <div className="fd-reason-text">{m.match_reason || "General compatibility"}</div>
                                     </div>
                                     <button className="fd-view-btn" onClick={() => navigate(`/chat/room_${m.id}`)}>View Profile</button>
                                 </div>

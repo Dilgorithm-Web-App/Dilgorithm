@@ -20,10 +20,14 @@ class MatchFeedSerializer(serializers.ModelSerializer):
     fullName = serializers.CharField(source='profile.fullName', read_only=True)
     bio = serializers.CharField(source='profile.bio', read_only=True)
     images = serializers.JSONField(source='profile.images', read_only=True)
+    location = serializers.CharField(source='profile.location', read_only=True)
+    sect = serializers.CharField(source='profile.sect', read_only=True)
+    education = serializers.CharField(source='profile.education', read_only=True)
+    caste = serializers.CharField(source='profile.caste', read_only=True)
     
     class Meta:
         model = CustomUser
-        fields = ('id', 'email', 'fullName', 'bio', 'images')
+        fields = ('id', 'email', 'fullName', 'bio', 'images', 'location', 'sect', 'education', 'caste')
 
 class InterestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,4 +38,4 @@ class InterestSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('fullName', 'bio', 'images', 'identityDocs')
+        fields = ('fullName', 'bio', 'images', 'identityDocs', 'location', 'sect', 'education', 'caste')

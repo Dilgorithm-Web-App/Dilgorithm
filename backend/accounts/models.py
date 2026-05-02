@@ -22,6 +22,11 @@ class UserProfile(models.Model):
     bio = models.TextField(blank=True, null=True)
     images = models.JSONField(default=list, blank=True) # Stores URLs or paths to images
     identityDocs = models.JSONField(default=dict, blank=True) # Stores verification docs
+    location = models.CharField(max_length=100, blank=True, null=True)
+    sect = models.CharField(max_length=50, blank=True, null=True)
+    education = models.CharField(max_length=100, blank=True, null=True)
+    caste = models.CharField(max_length=100, blank=True, null=True)
+    favorites = models.ManyToManyField(CustomUser, related_name='favorited_by', blank=True)
     
     def __str__(self):
         return f"Profile of {self.user.email}"

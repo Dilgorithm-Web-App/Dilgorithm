@@ -8,6 +8,7 @@ export const SearchPage = () => {
     const [profiles, setProfiles] = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [filters, setFilters] = useState({ location: '', sect: '', caste: '', education: '' });
+    const [favorites, setFavorites] = useState(new Set());
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -29,8 +30,24 @@ export const SearchPage = () => {
         }
         if (filters.sect) r = r.filter(p => (p.sect || '').toLowerCase() === filters.sect.toLowerCase());
         if (filters.location) r = r.filter(p => (p.location || '').toLowerCase().includes(filters.location.toLowerCase()));
+        if (filters.education) r = r.filter(p => (p.education || '').toLowerCase() === filters.education.toLowerCase());
+        if (filters.caste) r = r.filter(p => (p.caste || '').toLowerCase() === filters.caste.toLowerCase());
         setFiltered(r);
     }, [query, filters, profiles]);
+
+    const toggleFavorite = async (id) => {
+        try {
+            const res = await api.post('accounts/favorites/toggle/', { target_id: id });
+            setFavorites(prev => {
+                const next = new Set(prev);
+                if (res.data.is_favorite) next.add(id);
+                else next.delete(id);
+                return next;
+            });
+        } catch (err) {
+            console.error('Failed to toggle favorite', err);
+        }
+    };
 
     const COLORS = ['linear-gradient(135deg,#E57373,#EF5350)', 'linear-gradient(135deg,#64B5F6,#42A5F5)', 'linear-gradient(135deg,#81C784,#66BB6A)', 'linear-gradient(135deg,#BA68C8,#AB47BC)'];
 
@@ -71,6 +88,11 @@ export const SearchPage = () => {
                     <label className="sp-label">Caste</label>
                     <select className="sp-select" value={filters.caste} onChange={e => setFilters({...filters, caste: e.target.value})}>
                         <option value="">Select caste</option>
+                        <option value="Syed">Syed</option>
+                        <option value="Rajput">Rajput</option>
+                        <option value="Arain">Arain</option>
+                        <option value="Jat">Jat</option>
+                        <option value="Other">Other</option>
                     </select>
                 </div>
                 <div className="sp-filter-group">
@@ -99,7 +121,9 @@ export const SearchPage = () => {
                         <div key={p.id} className="sp-profile-card" style={{ animationDelay: `${i * .06}s` }}>
                             <div className="sp-profile-photo" style={{ background: COLORS[i % 4] }}>
                                 <span className="sp-profile-initial">{(p.fullName || p.username || 'U')[0].toUpperCase()}</span>
-                                <button className="sp-heart-btn">♡</button>
+                                <button className="sp-heart-btn" onClick={() => toggleFavorite(p.id)} style={{ color: favorites.has(p.id) ? '#E57373' : 'inherit' }}>
+                                    {favorites.has(p.id) ? '♥' : '♡'}
+                                </button>
                             </div>
                             <div className="sp-profile-body">
                                 <h4 className="sp-profile-name">{p.fullName || p.username}{p.age ? `, ${p.age}` : ''}</h4>
