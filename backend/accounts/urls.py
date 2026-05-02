@@ -14,6 +14,9 @@ from .views import (
     RegisterInit2FAView,
     RegisterVerify2FAView,
     ToggleFavoriteView,
+    AvailableInterestsView,
+    AvailableFiltersView,
+    FamilyConnectionView,
 )
 
 urlpatterns = [
@@ -26,12 +29,12 @@ urlpatterns = [
     path('feed/', MatchFeedView.as_view(), name='match_feed'),
     path('preferences/', PreferencesView.as_view(), name='preferences'),
     path('profile/', ProfileView.as_view(), name='profile'),
-<<<<<<< HEAD
     path('favorites/toggle/', ToggleFavoriteView.as_view(), name='toggle_favorite'),
-=======
     path('app-configuration/', AppConfigurationView.as_view(), name='app_configuration'),
     path('engagement-summary/', EngagementSummaryView.as_view(), name='engagement_summary'),
     path('chat/contacts/', ChatContactsView.as_view(), name='chat_contacts'),
     path('chat/messages/<int:contact_id>/', ChatMessagesView.as_view(), name='chat_messages'),
->>>>>>> bdf09bd5600ed89b2033b5a3b865a8d3e4f9373d
+    path('interests/available/', AvailableInterestsView.as_view(), name='available_interests'),
+    path('filters/', AvailableFiltersView.as_view(), name='available_filters'),
+    path('family/', FamilyConnectionView.as_view(), name='family_connections'),
 ]

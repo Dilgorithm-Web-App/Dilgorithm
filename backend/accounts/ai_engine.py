@@ -40,16 +40,31 @@ def calculate_compatibility_score(user_interest, candidate_interest):
              
     # Cap score at 100
     final_score = min(score, 100.0)
-    reason_string = ", ".join(reasons) if reasons else "General compatibility"
+    reason_string = ", ".join(reasons) if reasons else ""
+    
+    if not reason_string:
+        if final_score >= 50:
+            reason_string = "High overall compatibility potential"
+        elif final_score > 20:
+            reason_string = "Good potential based on core values"
+        else:
+            reason_string = "Exploring new possibilities together"
+            
     return final_score, reason_string
 
-def get_ranked_matches(user):
+def get_ranked_matches(user, filters=None):
     """
     Retrieves all candidates, filters out bots/banned users, 
     calculates scores, and returns a sorted list.
     """
     # Filter out the user themselves and banned/bot accounts
     candidates = CustomUser.objects.exclude(id=user.id).filter(accountStatus='Active')
+    
+    if filters:
+        if filters.get('education'):
+            candidates = candidates.filter(profile__education__iexact=filters['education'])
+        if filters.get('caste'):
+            candidates = candidates.filter(profile__caste__iexact=filters['caste'])
     
     try:
         user_interest = user.interests.first()

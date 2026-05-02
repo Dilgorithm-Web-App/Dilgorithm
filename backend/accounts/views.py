@@ -23,6 +23,7 @@ from .serializers import (
     UserProfileSerializer,
     ChatMessageSerializer,
     ChatContactSerializer,
+    FamilyConnectionSerializer,
 )
 from .ai_engine import get_ranked_matches
 
@@ -54,7 +55,13 @@ class MatchFeedView(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        ranked_data = get_ranked_matches(user)
+        
+        filters = {
+            'education': request.query_params.get('education'),
+            'caste': request.query_params.get('caste')
+        }
+        
+        ranked_data = get_ranked_matches(user, filters=filters)
         candidate_ids = [item['candidate_id'] for item in ranked_data]
         
         if not candidate_ids:
@@ -177,7 +184,66 @@ class ChatContactsView(generics.ListAPIView):
     serializer_class = ChatContactSerializer
 
     def get_queryset(self):
-        return CustomUser.objects.exclude(id=self.request.user.id).order_by("id")
+        user = self.request.user
+        sent_messages = ChatMessage.objects.filter(sender=user).values_list('recipient', flat=True)
+        received_messages = ChatMessage.objects.filter(recipient=user).values_list('sender', flat=True)
+        contact_ids = set(sent_messages).union(set(received_messages))
+        return CustomUser.objects.filter(id__in=contact_ids).exclude(id=user.id).order_by("id")
+
+class AvailableInterestsView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        interests = [
+            "Reading", "Traveling", "Cooking", "Sports", "Music", "Art", 
+            "Technology", "Gaming", "Photography", "Fitness", "Movies", 
+            "Dancing", "Foodie", "Nature", "Pets"
+        ]
+        return Response({"interests": interests}, status=status.HTTP_200_OK)
+
+class AvailableFiltersView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        filters = {
+            "caste": ["Syed", "Sheikh", "Pathan", "Mughal", "Rajput", "Arain", "Jat", "Other"],
+            "education": ["High School", "Bachelors", "Masters", "PhD", "Other"]
+        }
+        return Response(filters, status=status.HTTP_200_OK)
+
+class FamilyConnectionView(generics.ListCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FamilyConnectionSerializer
+
+    def get_queryset(self):
+        return FamilyConnection.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        role = request.data.get('role', 'Family Member')
+        
+        if not email:
+            return Response({"detail": "Email is required to add family member."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            linked_member = CustomUser.objects.get(email=email)
+            if linked_member == request.user:
+                return Response({"detail": "Cannot add yourself as family."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            if FamilyConnection.objects.filter(user=request.user, linkedMember=linked_member).exists():
+                return Response({"detail": "Family connection already exists."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            connection = FamilyConnection.objects.create(
+                user=request.user,
+                linkedMember=linked_member,
+                memberRole=role,
+                permissions={"can_view_matches": True, "can_chat": False}
+            )
+            serializer = self.get_serializer(connection)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "User with this email not found."}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 class ChatMessagesView(APIView):
