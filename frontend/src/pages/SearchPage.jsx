@@ -95,13 +95,6 @@ export const SearchPage = () => {
         }
     };
 
-    const COLORS = [
-        'linear-gradient(135deg,#E57373,#EF5350)',
-        'linear-gradient(135deg,#64B5F6,#42A5F5)',
-        'linear-gradient(135deg,#81C784,#66BB6A)',
-        'linear-gradient(135deg,#BA68C8,#AB47BC)',
-    ];
-
     return (
         <div className="sp-wrap">
             <div className="sp-searchbar">
@@ -213,7 +206,7 @@ export const SearchPage = () => {
                 <div className="sp-grid">
                     {filtered.map((p, i) => (
                         <div key={p.id} className="sp-profile-card" style={{ animationDelay: `${i * 0.06}s` }}>
-                            <UserCardPhoto profile={p} gradient={COLORS[i % 4]} tall className="sp-profile-photo">
+                            <UserCardPhoto profile={p} tall className="sp-profile-photo">
                                 <button
                                     type="button"
                                     className="sp-heart-btn"

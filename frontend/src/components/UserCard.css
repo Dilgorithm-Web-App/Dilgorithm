@@ -5,6 +5,7 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
+  background: #2a2829;
 }
 
 .uc-photo-img {
@@ -25,17 +26,4 @@
 .uc-photo .fd-fav,
 .uc-photo .sp-heart-btn {
   z-index: 2;
-}
-
-.uc-photo-initial {
-  position: relative;
-  z-index: 1;
-  font-size: 52px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.85);
-  pointer-events: none;
-}
-
-.uc-photo--has-img .uc-photo-initial {
-  display: none;
 }

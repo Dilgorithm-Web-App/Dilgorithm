@@ -146,16 +146,8 @@ export const RegisterPhotoPage = () => {
                             disabled={!canContinue}
                             aria-disabled={!canContinue}
                         >
-                            {busy ? 'Saving…' : 'Next'}
+                            {busy ? 'Saving…' : 'Confirm'}
                         </button>
-                        {!canContinue && !busy ? (
-                            <button
-                                type="button"
-                                className="rp-continue-blocker"
-                                aria-label="Photo required before continuing"
-                                onClick={() => setRequireHighlight(true)}
-                            />
-                        ) : null}
                     </div>
                 </form>
 

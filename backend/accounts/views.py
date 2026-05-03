@@ -188,7 +188,12 @@ class ChatContactsView(generics.ListAPIView):
         sent_messages = ChatMessage.objects.filter(sender=user).values_list('recipient', flat=True)
         received_messages = ChatMessage.objects.filter(recipient=user).values_list('sender', flat=True)
         contact_ids = set(sent_messages).union(set(received_messages))
-        return CustomUser.objects.filter(id__in=contact_ids).exclude(id=user.id).order_by("id")
+        return (
+            CustomUser.objects.filter(id__in=contact_ids)
+            .exclude(id=user.id)
+            .select_related('profile')
+            .order_by('id')
+        )
 
 class AvailableInterestsView(APIView):
     permission_classes = (IsAuthenticated,)

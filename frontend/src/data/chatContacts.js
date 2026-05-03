@@ -6,5 +6,3 @@ export const CHAT_CONTACTS = [
     { name: 'Lisa Chen', status: 'She sent a funny meme', id: '5' },
     { name: 'Maya Patel', status: 'Thanks for the help', id: '6' },
 ];
-
-export const CHAT_AVATAR_COLORS = ['#E57373', '#64B5F6', '#81C784', '#BA68C8', '#FFB74D', '#4DD0E1'];

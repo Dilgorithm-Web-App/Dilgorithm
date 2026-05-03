@@ -3,8 +3,15 @@
  * Supports full data URLs, https URLs, site-relative paths, and raw base64 payloads.
  */
 
+import profilePhotoPlaceholderUrl from '../assets/profile-photo-placeholder.svg';
+
 /** Reject absurd payloads that would blow JSON / DB limits before render */
 export const MAX_ACCEPTABLE_IMAGE_SRC_CHARS = 600_000;
+
+/** Neutral placeholder (no initials) when no stored photo resolves. */
+export function getProfilePhotoPlaceholderSrc() {
+    return profilePhotoPlaceholderUrl;
+}
 
 function looksLikeBase64Payload(s) {
     const compact = s.replace(/\s/g, '');
@@ -53,4 +60,12 @@ export function resolveProfileImageSrc(value) {
 export function getFirstProfileImageSrc(images) {
     if (!Array.isArray(images) || images.length === 0) return null;
     return resolveProfileImageSrc(images[0]);
+}
+
+/**
+ * Always returns a string suitable for <img src> — real photo or neutral placeholder (never letter fallbacks).
+ * @param {unknown} images profile.images from API
+ */
+export function getProfilePhotoImgSrc(images) {
+    return getFirstProfileImageSrc(images) ?? profilePhotoPlaceholderUrl;
 }

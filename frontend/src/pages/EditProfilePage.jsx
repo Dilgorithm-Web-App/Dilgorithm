@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { ProfilePhotoPayloadAdapter } from '../photoUpload/profilePhotoPayloadAdapter';
-import { resolveProfileImageSrc } from '../utils/profileImageSrc';
+import { getProfilePhotoPlaceholderSrc, resolveProfileImageSrc } from '../utils/profileImageSrc';
 import {
     imageMimeStrategy,
     maxSizeStrategy,
@@ -45,7 +45,8 @@ export const EditProfilePage = () => {
         };
     }, []);
 
-    const displayUrl = stagedPreview ?? resolveProfileImageSrc(savedUrl);
+    const displayUrl =
+        stagedPreview ?? resolveProfileImageSrc(savedUrl) ?? getProfilePhotoPlaceholderSrc();
 
     const onPickFile = async (e) => {
         const f = e.target.files?.[0];
@@ -134,12 +135,8 @@ export const EditProfilePage = () => {
                     </p>
                 ) : null}
 
-                <div className={`ep-preview-wrap ${displayUrl ? 'ep-preview-wrap--has' : ''}`}>
-                    {displayUrl ? (
-                        <img src={displayUrl} alt="Profile preview" className="ep-preview-img" />
-                    ) : (
-                        <span className="ep-placeholder">No photo on file yet</span>
-                    )}
+                <div className="ep-preview-wrap ep-preview-wrap--has">
+                    <img src={displayUrl} alt="Profile preview" className="ep-preview-img" />
                 </div>
 
                 {stagedPreview ? (
@@ -148,7 +145,7 @@ export const EditProfilePage = () => {
 
                 <div className="ep-actions">
                     <label className="ep-btn ep-btn--ghost">
-                        Choose new photo
+                        Change photo
                         <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="ep-file" onChange={onPickFile} disabled={busy} />
                     </label>
                     {stagedPreview ? (

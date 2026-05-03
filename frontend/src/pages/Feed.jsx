@@ -4,8 +4,6 @@ import api from '../api';
 import { UserCardPhoto } from '../components/UserCard';
 import './Feed.css';
 
-const COLORS = ['linear-gradient(135deg,#E57373,#EF5350)', 'linear-gradient(135deg,#64B5F6,#42A5F5)', 'linear-gradient(135deg,#81C784,#66BB6A)', 'linear-gradient(135deg,#BA68C8,#AB47BC)', 'linear-gradient(135deg,#FFB74D,#FFA726)', 'linear-gradient(135deg,#4DD0E1,#26C6DA)'];
-
 export const Feed = () => {
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -62,7 +60,7 @@ export const Feed = () => {
                     <div className="fd-top3">
                         {topMatches.map((m, i) => (
                             <div key={m.id} className="fd-card" style={{ animationDelay: `${i * .1}s` }}>
-                                <UserCardPhoto profile={m} gradient={COLORS[i]}>
+                                <UserCardPhoto profile={m}>
                                     {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
                                     <button 
                                         type="button"
@@ -98,7 +96,7 @@ export const Feed = () => {
                 <div className="fd-grid">
                     {allMatches.map((m, i) => (
                         <div key={m.id} className="fd-card" style={{ animationDelay: `${i * .06}s` }}>
-                            <UserCardPhoto profile={m} gradient={COLORS[i % 6]}>
+                            <UserCardPhoto profile={m}>
                                 {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
                                 <button 
                                     type="button"

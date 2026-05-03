@@ -63,6 +63,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'caste',
         )
 
+    def validate_images(self, value):
+        """Reject clearing or emptying photos via API; replacements must include a non-empty image."""
+        if value is None:
+            raise serializers.ValidationError('Profile photo is required.')
+        if not isinstance(value, list) or len(value) == 0:
+            raise serializers.ValidationError('Profile photo is required.')
+        first = value[0]
+        if not isinstance(first, str) or not first.strip():
+            raise serializers.ValidationError('Profile photo is required.')
+        return value
+
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     senderId = serializers.IntegerField(source='sender.id', read_only=True)
@@ -81,10 +92,12 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 class ChatContactSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     roomName = serializers.SerializerMethodField()
+    fullName = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email', 'status', 'roomName')
+        fields = ('id', 'username', 'email', 'fullName', 'images', 'status', 'roomName')
 
     def get_status(self, obj):
         request = self.context.get('request')
@@ -105,6 +118,18 @@ class ChatContactSerializer(serializers.ModelSerializer):
 
     def get_roomName(self, obj):
         return f'room_{obj.id}'
+
+    def get_fullName(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile and getattr(profile, 'fullName', None):
+            return profile.fullName
+        return ''
+
+    def get_images(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile and isinstance(getattr(profile, 'images', None), list):
+            return profile.images
+        return []
 
 class FamilyConnectionSerializer(serializers.ModelSerializer):
     linkedMemberEmail = serializers.EmailField(source='linkedMember.email', read_only=True)

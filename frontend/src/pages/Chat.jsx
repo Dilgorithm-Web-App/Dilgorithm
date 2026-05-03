@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
-import { CHAT_AVATAR_COLORS } from '../data/chatContacts';
+import { getProfilePhotoImgSrc } from '../utils/profileImageSrc';
 import './Chat.css';
 
 export const Chat = () => {
@@ -17,18 +17,16 @@ export const Chat = () => {
     const [toastMsg, setToastMsg] = useState('');
     const activeContact = useMemo(
         () => contacts.find((c) => Number(c.id) === contactId),
-        [contacts, contactId]
+        [contacts, contactId],
     );
 
-    const activeIndex = useMemo(
-        () => contacts.findIndex((c) => Number(c.id) === contactId),
-        [contacts, contactId]
-    );
-
-    const headerColor =
-        activeIndex >= 0 ? CHAT_AVATAR_COLORS[activeIndex % CHAT_AVATAR_COLORS.length] : CHAT_AVATAR_COLORS[0];
-    const displayName = activeContact?.username || activeContact?.email || (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
+    const displayName =
+        activeContact?.fullName ||
+        activeContact?.username ||
+        activeContact?.email ||
+        (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
     const headerStatus = activeContact?.status || 'Tap to chat';
+    const headerPhotoSrc = getProfilePhotoImgSrc(activeContact?.images);
 
     useEffect(() => {
         const loadContacts = async () => {
@@ -85,7 +83,7 @@ export const Chat = () => {
         <div className="ch-layout">
             <div className="ch-contacts">
                 <h4 className="ch-contacts-title">Messages</h4>
-                {contacts.map((c, i) => (
+                {contacts.map((c) => (
                     <div
                         key={c.id}
                         className={`ch-contact ${contactId === Number(c.id) ? 'ch-contact--active' : ''}`}
@@ -99,11 +97,11 @@ export const Chat = () => {
                             }
                         }}
                     >
-                        <div className="ch-contact-av" style={{ background: CHAT_AVATAR_COLORS[i % CHAT_AVATAR_COLORS.length] }}>
-                            {(c.username || c.email || 'U')[0]?.toUpperCase()}
+                        <div className="ch-contact-av">
+                            <img src={getProfilePhotoImgSrc(c.images)} alt="" className="ch-contact-av-img" />
                         </div>
                         <div className="ch-contact-info">
-                            <div className="ch-contact-name">{c.username || c.email}</div>
+                            <div className="ch-contact-name">{c.fullName || c.username || c.email}</div>
                             <div className="ch-contact-status">{c.status}</div>
                         </div>
                     </div>
@@ -123,16 +121,16 @@ export const Chat = () => {
                                 <path d="M19 12H5M12 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <div className="ch-header-av" style={{ background: headerColor }}>
-                            {displayName[0]?.toUpperCase() || 'U'}
+                        <div className="ch-header-av">
+                            <img src={headerPhotoSrc} alt="" className="ch-header-av-img" />
                         </div>
                         <div>
                             <div className="ch-header-name">{displayName}</div>
                             <div className="ch-header-status">{headerStatus}</div>
                         </div>
                     </div>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         className="ch-add-family"
                         onClick={() => {
                             setToastMsg(`Family invite sent to ${displayName}!`);
@@ -145,7 +143,21 @@ export const Chat = () => {
 
                 <div className="ch-messages">
                     {error ? <p className="ch-error">{error}</p> : null}
-                    {toastMsg ? <div style={{ background: '#4CAF50', color: 'white', padding: '10px', borderRadius: '4px', textAlign: 'center', marginBottom: '10px', animation: 'fadeIn 0.3s ease' }}>{toastMsg}</div> : null}
+                    {toastMsg ? (
+                        <div
+                            style={{
+                                background: '#4CAF50',
+                                color: 'white',
+                                padding: '10px',
+                                borderRadius: '4px',
+                                textAlign: 'center',
+                                marginBottom: '10px',
+                                animation: 'fadeIn 0.3s ease',
+                            }}
+                        >
+                            {toastMsg}
+                        </div>
+                    ) : null}
                     {messages.length === 0 && (
                         <div className="ch-empty">
                             <span style={{ fontSize: 36 }}>💬</span>
