@@ -39,4 +39,13 @@ export const DESIGN_PATTERN_MANIFEST = {
         backend: 'backend/accounts/matching_patterns.py → ProfileFilterComposite',
         note: 'Whole-form validation tree; queryset filters composed uniformly.',
     },
+    chatWebSocketStack: {
+        path: 'src/chat/ws/ChatWebSocketClient.js',
+        backend: 'backend/accounts/consumers.py, jwt_ws_middleware.py, services/chat_message_service.py',
+        note: 'Chat: State (connectionState), Observer (SimpleEventSubject), Composite (inboundMessageComposite), Iterator (exponentialBackoff), Adapter (adaptChatServerMessage), Factory (buildChatWebSocketUrl, chatWebSocketFactory), Singleton (chatSocketConfig). DIP: injectable WebSocket. SRP: shared chat_message_service for REST + WS.',
+    },
+    favoritesFeedSync: {
+        path: 'src/features/favorites/favoriteIdsFromFeed.js',
+        note: 'SRP: derive favorite id Set from feed rows. Adapter (adaptMatchRowToFavoritePair), Factory (createFavoritesSetFromFeedRows), Iterator-style row scan. DIP: Feed/Search depend on module, not API shape details.',
+    },
 };

@@ -288,23 +288,11 @@ class ChatMessagesView(APIView):
         if not contact:
             return Response({"detail": "Contact not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        message = (request.data.get("message") or "").strip()
-        if not message:
-            return Response({"detail": "Message cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+        from .services.chat_message_service import create_chat_message
 
-        profanity_list = ["badword1", "badword2", "hate", "scam"]
-        lower_msg = message.lower()
-        if any(word in lower_msg for word in profanity_list):
-            return Response(
-                {"detail": "Message blocked: Violates community guidelines."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        chat_message = ChatMessage.objects.create(
-            sender=request.user,
-            recipient=contact,
-            message=message,
-        )
+        chat_message, err = create_chat_message(request.user, contact, request.data.get("message"))
+        if err:
+            return Response({"detail": err}, status=status.HTTP_400_BAD_REQUEST)
         serializer = ChatMessageSerializer(chat_message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

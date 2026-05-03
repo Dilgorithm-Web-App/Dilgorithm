@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { createFavoritesSetFromFeedRows } from '../features/favorites/favoriteIdsFromFeed';
 import { UserCardPhoto } from '../components/UserCard';
 import './Feed.css';
 
@@ -12,19 +13,28 @@ export const Feed = () => {
 
     useEffect(() => {
         const fetch = async () => {
-            try { const r = await api.get('accounts/feed/'); setMatches(r.data); } catch (e) { console.error(e); }
+            try {
+                const r = await api.get('accounts/feed/');
+                const data = Array.isArray(r.data) ? r.data : [];
+                setMatches(data);
+                setFavorites(createFavoritesSetFromFeedRows(data));
+            } catch (e) {
+                console.error(e);
+            }
             setLoading(false);
         };
         fetch();
     }, []);
 
     const toggleFavorite = async (id) => {
+        const targetId = Number(id);
+        if (Number.isNaN(targetId)) return;
         try {
-            const res = await api.post('accounts/favorites/toggle/', { target_id: id });
-            setFavorites(prev => {
+            const res = await api.post('accounts/favorites/toggle/', { target_id: targetId });
+            setFavorites((prev) => {
                 const next = new Set(prev);
-                if (res.data.is_favorite) next.add(id);
-                else next.delete(id);
+                if (res.data.is_favorite) next.add(targetId);
+                else next.delete(targetId);
                 return next;
             });
         } catch (err) {
@@ -66,9 +76,9 @@ export const Feed = () => {
                                         type="button"
                                         className="fd-fav" 
                                         onClick={() => toggleFavorite(m.id)} 
-                                        style={{ color: favorites.has(m.id) ? '#E57373' : 'inherit' }}
+                                        style={{ color: favorites.has(Number(m.id)) ? '#E57373' : 'inherit' }}
                                     >
-                                        {favorites.has(m.id) ? '♥' : '♡'}
+                                        {favorites.has(Number(m.id)) ? '♥' : '♡'}
                                     </button>
                                 </UserCardPhoto>
                                 <div className="fd-card-body">
@@ -102,9 +112,9 @@ export const Feed = () => {
                                     type="button"
                                     className="fd-fav" 
                                     onClick={() => toggleFavorite(m.id)} 
-                                    style={{ color: favorites.has(m.id) ? '#E57373' : 'inherit' }}
+                                    style={{ color: favorites.has(Number(m.id)) ? '#E57373' : 'inherit' }}
                                 >
-                                    {favorites.has(m.id) ? '♥' : '♡'}
+                                    {favorites.has(Number(m.id)) ? '♥' : '♡'}
                                 </button>
                             </UserCardPhoto>
                             <div className="fd-card-body">

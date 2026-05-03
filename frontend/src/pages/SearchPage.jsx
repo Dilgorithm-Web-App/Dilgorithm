@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { createFavoritesSetFromFeedRows } from '../features/favorites/favoriteIdsFromFeed';
 import { useCatalogMetadata } from '../hooks/useCatalogMetadata';
 import { OptionIterator } from '../catalog/OptionIterator';
 import { UserCardPhoto } from '../components/UserCard';
@@ -47,8 +48,10 @@ export const SearchPage = () => {
         const fetch = async () => {
             try {
                 const res = await api.get('accounts/feed/');
-                setProfiles(res.data || []);
-                setFiltered(res.data || []);
+                const data = Array.isArray(res.data) ? res.data : [];
+                setProfiles(data);
+                setFiltered(data);
+                setFavorites(createFavoritesSetFromFeedRows(data));
             } catch (e) {
                 console.error(e);
             }
@@ -82,12 +85,14 @@ export const SearchPage = () => {
     }, [query, filterState, profiles]);
 
     const toggleFavorite = async (id) => {
+        const targetId = Number(id);
+        if (Number.isNaN(targetId)) return;
         try {
-            const res = await api.post('accounts/favorites/toggle/', { target_id: id });
+            const res = await api.post('accounts/favorites/toggle/', { target_id: targetId });
             setFavorites((prev) => {
                 const next = new Set(prev);
-                if (res.data.is_favorite) next.add(id);
-                else next.delete(id);
+                if (res.data.is_favorite) next.add(targetId);
+                else next.delete(targetId);
                 return next;
             });
         } catch (err) {
@@ -211,9 +216,9 @@ export const SearchPage = () => {
                                     type="button"
                                     className="sp-heart-btn"
                                     onClick={() => toggleFavorite(p.id)}
-                                    style={{ color: favorites.has(p.id) ? '#E57373' : 'inherit' }}
+                                    style={{ color: favorites.has(Number(p.id)) ? '#E57373' : 'inherit' }}
                                 >
-                                    {favorites.has(p.id) ? '♥' : '♡'}
+                                    {favorites.has(Number(p.id)) ? '♥' : '♡'}
                                 </button>
                             </UserCardPhoto>
                             <div className="sp-profile-body">

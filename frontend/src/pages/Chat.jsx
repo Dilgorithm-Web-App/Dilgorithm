@@ -1,11 +1,15 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
+import { AuthContext } from '../AuthContext';
 import { getProfilePhotoImgSrc } from '../utils/profileImageSrc';
+import { useChatWebSocket } from '../chat/useChatWebSocket';
+import { ConnectionState } from '../chat/ws/connectionState';
 import './Chat.css';
 
 export const Chat = () => {
     const { roomName } = useParams();
+    const { user } = useContext(AuthContext);
     const [contacts, setContacts] = useState([]);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -28,12 +32,26 @@ export const Chat = () => {
     const headerStatus = activeContact?.status || 'Tap to chat';
     const headerPhotoSrc = getProfilePhotoImgSrc(activeContact?.images);
 
+    const accessToken = user?.token || localStorage.getItem('access_token') || '';
+
+    const loadMessages = useCallback(async () => {
+        if (!contactId) return;
+        try {
+            const { data } = await api.get(`accounts/chat/messages/${contactId}/`);
+            const rows = Array.isArray(data) ? data : [];
+            setMessages(rows);
+            setError('');
+        } catch {
+            setError('Could not load chat messages.');
+        }
+    }, [contactId]);
+
     useEffect(() => {
         const loadContacts = async () => {
             try {
                 const { data } = await api.get('accounts/chat/contacts/');
                 setContacts(Array.isArray(data) ? data : []);
-            } catch (e) {
+            } catch {
                 setError('Could not load chat contacts.');
             }
         };
@@ -41,23 +59,26 @@ export const Chat = () => {
     }, []);
 
     useEffect(() => {
-        if (!contactId) return;
-
-        const loadMessages = async () => {
-            try {
-                const { data } = await api.get(`accounts/chat/messages/${contactId}/`);
-                const rows = Array.isArray(data) ? data : [];
-                setMessages(rows);
-                setError('');
-            } catch (e) {
-                setError('Could not load chat messages.');
-            }
-        };
-
         loadMessages();
-        const poll = setInterval(loadMessages, 2500);
-        return () => clearInterval(poll);
-    }, [contactId]);
+    }, [loadMessages]);
+
+    const onWsMessage = useCallback((row) => {
+        setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+    }, []);
+
+    const { connectionState, sendText } = useChatWebSocket({
+        roomName: roomName || '',
+        accessToken,
+        enabled: Boolean(contactId && roomName && accessToken),
+        onMessage: onWsMessage,
+        onOpen: () => {
+            setError('');
+            loadMessages();
+        },
+        onError: (detail) => {
+            if (detail) setError(detail);
+        },
+    });
 
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,16 +89,23 @@ export const Chat = () => {
         const text = input.trim();
         if (!text || !contactId) return;
 
-        api.post(`accounts/chat/messages/${contactId}/`, { message: text })
-            .then(({ data }) => {
-                setMessages((prev) => [...prev, data]);
-                setInput('');
-                setError('');
-            })
-            .catch((err) => {
-                setError(err.response?.data?.detail || 'Failed to send message.');
-            });
+        const ok = sendText(text);
+        if (ok) {
+            setInput('');
+            setError('');
+        } else {
+            setError('Not connected. Wait for chat to reconnect, then try again.');
+        }
     };
+
+    const wsStatus =
+        connectionState === ConnectionState.RECONNECTING
+            ? 'Reconnecting…'
+            : connectionState === ConnectionState.CONNECTING
+              ? 'Connecting…'
+              : connectionState === ConnectionState.ERROR
+                ? 'Connection error'
+                : null;
 
     return (
         <div className="ch-layout">
@@ -127,6 +155,7 @@ export const Chat = () => {
                         <div>
                             <div className="ch-header-name">{displayName}</div>
                             <div className="ch-header-status">{headerStatus}</div>
+                            {wsStatus ? <div className="ch-ws-status">{wsStatus}</div> : null}
                         </div>
                     </div>
                     <button
