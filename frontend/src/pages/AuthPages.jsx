@@ -5,9 +5,8 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import ReCAPTCHA from 'react-google-recaptcha';
 import dgHeartLogo from '../assets/dg_heart_logo.png';
-
-/** Served from `public/parchment_bg.png` so the URL is stable across machines and builds (avoids bundler-only asset issues). */
-const PARCHMENT_BG_URL = `${import.meta.env.BASE_URL}parchment_bg.png`;
+import dilgorithmLogoText from '../assets/dilgorithm-logo-text.png';
+import './AuthPages.css';
 
 export const Login = () => {
     const [email, setEmail] = useState('');
@@ -49,144 +48,55 @@ export const Login = () => {
     };
 
     return (
-        <div
-            style={{
-                minHeight: '200vh',
-                overflowY: 'auto',
-                width: '100%',
-                backgroundImage: `url(${PARCHMENT_BG_URL})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundAttachment: 'fixed',
-                backgroundColor: 'transparent',
-                padding: '0',
-            }}
-        >
-            <div
-                style={{
-                    width: '100%',
-                    maxWidth: '900px',
-                    margin: '0 auto',
-                    backgroundColor: 'transparent',
-                    padding: '0 24px 40px',
-                    boxSizing: 'border-box',
-                    textAlign: 'center',
-                }}
-            >
-                <div
-                    style={{
-                        minHeight: '100vh',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'transparent',
-                    }}
-                >
-                    <img
-                        src={dgHeartLogo}
-                        alt="Dilgorithm logo"
-                        style={{
-                            width: '100%',
-                            maxWidth: '720px',
-                            height: 'auto',
-                            objectFit: 'contain',
-                            mixBlendMode: 'darken',
-                        }}
-                    />
-                </div>
-                <div
-                    style={{
-                        minHeight: '100vh',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                    }}
-                >
-                    <h2 style={{ marginTop: 0, marginBottom: '24px' }}>Login to Dilgorithm</h2>
-                    <form
-                        onSubmit={handleSubmit}
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            width: '100%',
-                        }}
-                    >
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        onChange={e => setEmail(e.target.value)}
-                        required
-                        style={{
-                            width: '100%',
-                            maxWidth: '440px',
-                            padding: '12px 14px',
-                            borderRadius: '10px',
-                            border: '1px solid #8f7147',
-                            backgroundColor: 'rgba(255, 248, 235, 0.75)',
-                            boxSizing: 'border-box',
-                        }}
-                    />
-                    <div style={{ height: '14px' }} />
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        onChange={e => setPassword(e.target.value)}
-                        required
-                        style={{
-                            width: '100%',
-                            maxWidth: '440px',
-                            padding: '12px 14px',
-                            borderRadius: '10px',
-                            border: '1px solid #8f7147',
-                            backgroundColor: 'rgba(255, 248, 235, 0.75)',
-                            boxSizing: 'border-box',
-                        }}
-                    />
-                    <div style={{ height: '22px' }} />
-                    <p style={{ marginTop: 0, marginBottom: '10px' }}>
-                        Need an account? <a href="/register">Register here</a>.
-                    </p>
-                    <p style={{ marginTop: 0, marginBottom: '18px' }}>
-                        Forgot password? <Link to="/forgot-password">Reset it here</Link>.
-                    </p>
+        <div className="auth-page-container">
+            {/* Page 1: Logo only */}
+            <section className="auth-hero" aria-label="Logo">
+                <img src={dgHeartLogo} alt="Dilgorithm logo" className="auth-hero-logo" />
+            </section>
 
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: '14px',
-                            flexWrap: 'wrap',
-                            marginBottom: '18px',
-                        }}
-                    >
-                        {googleClientId ? (
-                            <div
-                                style={{
-                                    border: '1px solid #b8a27e',
-                                    borderRadius: '999px',
-                                    padding: '2px 10px',
-                                    backgroundColor: 'rgba(255, 248, 235, 0.75)',
-                                }}
-                            >
-                                <GoogleLogin
-                                    onSuccess={handleGoogleSuccess}
-                                    onError={() => setStatusMessage('Google sign-in failed. Please try again.')}
-                                    text="signin_with"
-                                    shape="pill"
-                                    theme="outline"
-                                    size="medium"
-                                />
-                            </div>
-                        ) : (
-                            <div style={{ fontSize: '13px', color: '#b91c1c' }}>
-                                Set VITE_GOOGLE_CLIENT_ID in frontend/.env
-                            </div>
+            {/* Page 2: Login */}
+            <section className="auth-form-section" aria-label="Log in">
+                <div className="auth-card">
+                    <img
+                        src={dilgorithmLogoText}
+                        alt="Dilgorithm"
+                        className="auth-brand-image"
+                    />
+                    <h2 className="auth-header">Log In</h2>
+
+                    <form className="auth-form" onSubmit={handleSubmit}>
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            className="auth-input"
+                            onChange={e => setEmail(e.target.value)}
+                            required
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            className="auth-input"
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                        />
+
+                        {/* Styled Links */}
+                        <div className="link-group">
+                            <p>Need an account? <Link to="/register">Register</Link></p>
+                            <p>Forgot password? <Link to="/forgot-password">Reset</Link></p>
+                        </div>
+
+                        {statusMessage && (
+                            <p style={{ color: '#b91c1c', margin: '0', fontSize: '14px' }}>
+                                {statusMessage}
+                            </p>
                         )}
 
+                        <button type="submit" className="qabool-hai-btn">Qabool Hai</button>
+                    </form>
+
+                    {/* Captcha Wrapper clips the red text */}
+                    <div className="captcha-wrapper">
                         {recaptchaSiteKey ? (
                             <ReCAPTCHA
                                 ref={recaptchaRef}
@@ -204,29 +114,28 @@ export const Login = () => {
                         )}
                     </div>
 
-                    {statusMessage && (
-                        <p style={{ color: '#b91c1c', marginTop: '0', marginBottom: '12px', fontSize: '14px' }}>
-                            {statusMessage}
-                        </p>
-                    )}
+                    <div className="divider">
+                        <span>OR</span>
+                    </div>
 
-                        <button
-                            type="submit"
-                            style={{
-                                border: 'none',
-                                borderRadius: '999px',
-                                padding: '12px 30px',
-                                backgroundColor: '#7d5b5b',
-                                color: '#fff',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                            }}
-                        >
-                            Qabool Hai
-                        </button>
-                    </form>
+                    <div className="google-container">
+                        {googleClientId ? (
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => setStatusMessage('Google sign-in failed. Please try again.')}
+                                text="signin_with"
+                                shape="pill"
+                                theme="outline"
+                                size="medium"
+                            />
+                        ) : (
+                            <div style={{ fontSize: '13px', color: '#b91c1c' }}>
+                                Set VITE_GOOGLE_CLIENT_ID in frontend/.env
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
     );
 };

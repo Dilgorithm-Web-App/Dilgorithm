@@ -1,3 +1,4 @@
+import logging
 from .models import CustomUser
 from .matching_patterns import (
     build_filters_from_request,
@@ -5,7 +6,7 @@ from .matching_patterns import (
     ranked_match_records,
 )
 
-from .models import CustomUser
+logger = logging.getLogger(__name__)
 
 def calculate_compatibility_score(user_interest, candidate_interest):
     """
@@ -22,7 +23,8 @@ def calculate_compatibility_score(user_interest, candidate_interest):
     try:
         user_families = list(user.profile.family_members.all())
         candidate_families = list(candidate.profile.family_members.all())
-    except Exception:
+    except Exception as e:
+        logger.warning("Could not fetch family members for AI matching: %s", e)
         user_families = []
         candidate_families = []
         
@@ -59,7 +61,8 @@ def get_ranked_matches(user, filters=None):
 
     try:
         user_interest = user.interests.first()
-    except Exception:
+    except Exception as e:
+        logger.error("Error fetching user interests for user %s: %s", user.id, e)
         return []
 
     if not user_interest:
