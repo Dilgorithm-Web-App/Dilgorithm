@@ -1,6 +1,6 @@
 /**
  * Maps GoF-style patterns to project locations for reviewers (frontend + backend refs).
- * Principles called out: SRP, OCP, DIP, ISP (narrow hooks), LSP (substitutable steps/filters).
+ * Also exports `solidPrinciples` and `engineeringPrinciples` for SOLID / DRY / KISS alignment.
  *
  * Updated to include dashboard-layer patterns alongside the original onboarding patterns.
  */
@@ -76,5 +76,59 @@ export const DESIGN_PATTERN_MANIFEST = {
     favoritesFeedSync: {
         path: 'src/features/favorites/favoriteIdsFromFeed.js',
         note: 'SRP: derive favorite id Set from feed rows. Adapter (adaptMatchRowToFavoritePair), Factory (createFavoritesSetFromFeedRows), Iterator-style row scan. DIP: Feed/Search depend on module, not API shape details.',
+    },
+
+    /**
+     * SOLID map — how each principle is expressed in this repo (keep in sync when adding layers).
+     * Use with GoF sections above; do not duplicate long explanations in random files.
+     */
+    solidPrinciples: {
+        srp: {
+            summary: 'One reason to change per module.',
+            refs: [
+                'src/patterns/ApiResponseAdapter.js — shape only',
+                'src/utils/formatApiError.js — HTTP error text only',
+                'backend/accounts/services/* — one bounded context per file',
+                'backend/accounts/patterns.py — NotificationService vs EventBus vs ViewResponseFactory',
+            ],
+        },
+        ocp: {
+            summary: 'Extend via new types/handlers; avoid editing shared cores for one-off behavior.',
+            refs: [
+                'src/onboarding/factory/StepFactory.jsx',
+                'src/patterns/FilterComposite.js — new leaf filters',
+                'backend/accounts/patterns.py — AccountState / new EventBus subscribers',
+            ],
+        },
+        lsp: {
+            summary: 'Substitutable states, scoring templates, and adapter outputs (same DTO contracts).',
+            refs: [
+                'backend/accounts/patterns.py — AccountState subclasses',
+                'backend/accounts/matching_patterns.py — CompatibilityScoringTemplate hooks',
+                'src/patterns/ApiResponseAdapter.js — UnifiedProfile',
+            ],
+        },
+        isp: {
+            summary: 'Narrow interfaces; avoid fat “context” objects passed everywhere.',
+            refs: [
+                'src/patterns/EventBus.js — subscribe/publish only',
+                'backend/accounts/patterns.py — NotificationService public methods',
+            ],
+        },
+        dip: {
+            summary: 'UI and views depend on contracts (DTOs, factories, bus), not raw API/ORM everywhere.',
+            refs: [
+                'src/patterns/ApiResponseAdapter.js',
+                'src/chat/ws/ChatWebSocketClient.js — injectable WS + token',
+                'backend/accounts/views.py — ViewResponseFactory / services delegation',
+            ],
+        },
+    },
+
+    /** KISS / DRY reminders tied to this codebase (not a second pattern catalog). */
+    engineeringPrinciples: {
+        dry: 'Prefer src/utils/formatApiError.js and shared adapters over duplicated axios error parsing.',
+        kiss: 'Prefer small modules and explicit names over clever one-liners in pages and views.',
+        consistency: 'Dashboard pages: constrained width wrappers use margin-inline: auto (e.g. hp-grid, sp-wrap, fd-wrap).',
     },
 };

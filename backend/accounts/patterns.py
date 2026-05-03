@@ -9,13 +9,19 @@ by adding the four remaining GoF patterns used in the project:
 - Observer:   EventBus — pub/sub for domain events (user.registered, report.created …).
 - Factory:    ViewResponseFactory — uniform API Response construction.
 
-SOLID principles applied:
-  SRP  — each class has a single, well-defined responsibility.
+SOLID principles applied (see also ``matching_patterns.py`` and
+``frontend/src/onboarding/designPatternManifest.js`` → ``solidPrinciples``):
+
+  SRP  — each class has a single, well-defined responsibility (factories build
+         responses; the event bus routes events; states own transitions).
   OCP  — new observers / states / response types can be added without modifying
-         existing code.
-  LSP  — all state classes are substitutable through the same transition interface.
-  ISP  — each pattern exposes only the methods its consumers need.
-  DIP  — views depend on factory/bus abstractions, not concrete Response construction.
+         existing core classes (register handlers; add AccountState subclasses).
+  LSP  — all state classes are substitutable through the same transition interface;
+         ViewResponseFactory returns uniform Response shapes callers can rely on.
+  ISP  — each pattern exposes only the methods its consumers need (narrow
+         NotificationService API; EventBus subscribe/publish surface).
+  DIP  — views depend on factory/bus abstractions, not concrete Response
+         construction; domain events flow through ``event_bus`` not inline coupling.
 """
 
 from __future__ import annotations

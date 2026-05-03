@@ -1,5 +1,9 @@
 /**
  * Turn an axios-style error into a user-visible string (DRF detail, network, status).
+ *
+ * SOLID: SRP — this module only normalises transport/API errors to display text.
+ * OCP — extend by adding branches for new `data` shapes without changing callers’ contracts.
+ * DIP — pages depend on this helper instead of reaching into axios internals everywhere.
  */
 export function formatApiError(err, fallback = 'Something went wrong.') {
     if (!err?.response) {
