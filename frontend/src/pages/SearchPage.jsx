@@ -34,6 +34,7 @@ export const SearchPage = () => {
     const [profiles, setProfiles] = useState([]);
     const [filterState, setFilterState] = useState({ location: '', sect: '', caste: '', education: '' });
     const [favorites, setFavorites] = useState(new Set());
+    const [loadError, setLoadError] = useState('');
     const [resultsLoading, setResultsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(null);
@@ -57,8 +58,20 @@ export const SearchPage = () => {
 
     const handleSearch = useCallback(
         async (pageNum = 1) => {
+            setLoadError('');
             setResultsLoading(true);
             setPage(pageNum);
+
+            if (!localStorage.getItem('access_token')) {
+                setLoadError('You need to be logged in to search.');
+                setResultsLoading(false);
+                setProfiles([]);
+                setTotalCount(0);
+                setHasNext(false);
+                setHasPrevious(false);
+                return;
+            }
+
             try {
                 const params = buildProfileSearchParams({
                     nameQuery: query,
@@ -99,6 +112,19 @@ export const SearchPage = () => {
                 });
             } catch (e) {
                 console.error(e);
+                const status = e.response?.status;
+                const detail = e.response?.data?.detail;
+                if (status === 401 || status === 403) {
+                    setLoadError('Session expired or not allowed. Log in again and retry.');
+                } else if (status === 404) {
+                    setLoadError('Search API not found. Restart the backend and confirm it includes accounts/search/.');
+                } else {
+                    setLoadError(
+                        typeof detail === 'string'
+                            ? detail
+                            : 'Could not load profiles. Check that the backend is running and you are logged in.',
+                    );
+                }
                 setProfiles([]);
                 setTotalCount(0);
                 setHasNext(false);
@@ -112,7 +138,6 @@ export const SearchPage = () => {
 
     useEffect(() => {
         handleSearch(1);
-        // Intentionally run once on mount; further loads use Apply / Enter / pagination.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -179,7 +204,7 @@ export const SearchPage = () => {
                 <input
                     className="sp-input"
                     type="text"
-                    placeholder="Search by display name..."
+                    placeholder="Search by name, email, username, or user id…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={(e) => {
@@ -191,6 +216,11 @@ export const SearchPage = () => {
                 />
             </div>
 
+            {loadError ? (
+                <p className="sp-banner sp-banner--warn" role="alert">
+                    {loadError}
+                </p>
+            ) : null}
             {catalogError ? (
                 <p className="sp-banner sp-banner--warn" role="alert">
                     Filters could not be loaded; narrow results with search only.

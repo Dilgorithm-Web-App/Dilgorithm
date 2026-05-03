@@ -24,14 +24,19 @@ export class TextFilterLeaf extends FilterNode {
 }
 
 export class SearchQueryLeaf extends FilterNode {
-    constructor(query, fields = ['displayName', 'bio']) {
+    constructor(query, fields = ['displayName', 'bio', 'email', 'username']) {
         super();
         this.query = (query || '').trim().toLowerCase();
         this.fields = fields;
     }
     apply(list) {
         if (!this.query) return list;
-        return list.filter(p => this.fields.some(f => (p[f] || '').toLowerCase().includes(this.query)));
+        return list.filter((p) => {
+            if (this.fields.some((f) => String(p[f] ?? '').toLowerCase().includes(this.query))) {
+                return true;
+            }
+            return String(p.id ?? '').includes(this.query);
+        });
     }
 }
 

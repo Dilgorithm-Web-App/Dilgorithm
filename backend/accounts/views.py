@@ -39,6 +39,7 @@ from .serializers import (
     FamilyMemberSerializer,
 )
 from .ai_engine import get_ranked_matches
+from .match_storage import replace_match_recommendations
 # ---- Design Patterns (Singleton, Observer, Factory, State) ----
 from .patterns import (
     event_bus,                # Observer pattern
@@ -375,6 +376,8 @@ class MatchFeedView(generics.ListAPIView):
         blocked_ids = get_blocked_ids(user)
         ranked_data = [r for r in ranked_data if r['candidate_id'] not in blocked_ids]
 
+        replace_match_recommendations(user, ranked_data)
+
         candidate_ids = [item['candidate_id'] for item in ranked_data]
 
         if not candidate_ids:
@@ -390,6 +393,49 @@ class MatchFeedView(generics.ListAPIView):
             item['match_reason'] = ranked_data[i]['reason']
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class UserSearchView(APIView):
+    """
+    Searchable directory of registered users (same card shape as /feed/).
+    Excludes the current user and anyone blocked (either direction).
+    Only includes users that have a UserProfile row (serializer expects profile.*).
+    Optional ?q= narrows by username, email, display name, or bio (server-side).
+    Optional ?limit= caps rows (default 400, max 500).
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            lim = int(request.query_params.get("limit", "400"))
+        except ValueError:
+            lim = 400
+        lim = max(1, min(lim, 500))
+
+        blocked = get_blocked_ids(user)
+        qs = (
+            CustomUser.objects.exclude(pk=user.pk)
+            .filter(is_active=True)
+            .filter(profile__isnull=False)
+            .select_related("profile")
+        )
+        if blocked:
+            qs = qs.exclude(pk__in=blocked)
+
+        q = (request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(username__icontains=q)
+                | Q(email__icontains=q)
+                | Q(profile__fullName__icontains=q)
+                | Q(profile__bio__icontains=q)
+            )
+
+        candidates = list(qs.order_by("profile__fullName", "username", "id")[:lim])
+        serializer = MatchFeedSerializer(candidates, many=True, context={"request": request})
+        return Response(serializer.data)
 
 
 # ---------------------------------------------------------------------------

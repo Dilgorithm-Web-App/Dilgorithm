@@ -13,7 +13,14 @@ export function buildProfileSearchParams({ nameQuery = '', filterState = {}, pag
         params.page_size = Math.min(Number(pageSize), 100);
     }
     const n = (nameQuery || '').trim();
-    if (n) params.name = n;
+    if (n) {
+        if (/^\d+$/.test(n)) {
+            const idNum = parseInt(n, 10);
+            if (Number.isFinite(idNum)) params.id = idNum;
+        } else {
+            params.search = n;
+        }
+    }
     if (filterState.location?.trim()) params.location = filterState.location.trim();
     if (filterState.sect?.trim()) params.sect = filterState.sect.trim();
     if (filterState.caste?.trim()) params.caste = filterState.caste.trim();
