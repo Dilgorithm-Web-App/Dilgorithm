@@ -357,9 +357,12 @@ class MatchFeedView(generics.ListAPIView):
         user = request.user
         user.touch_last_seen()
 
+        # All four front-end search filters forwarded to the Composite pipeline
         filters = {
             'education': request.query_params.get('education'),
-            'caste': request.query_params.get('caste')
+            'caste': request.query_params.get('caste'),
+            'location': request.query_params.get('location'),
+            'sect': request.query_params.get('sect'),
         }
 
         ranked_data = get_ranked_matches(user, filters=filters)

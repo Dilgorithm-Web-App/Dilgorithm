@@ -54,7 +54,8 @@ def get_ranked_matches(user, filters=None):
     returns sorted list. Iterator helper available for sequential reads.
     """
     candidates = CustomUser.objects.exclude(id=user.id).filter(accountStatus="Active")
-    filter_tree = build_filters_from_request(filters)
+    # Pass user for preference fallback when request filters are absent
+    filter_tree = build_filters_from_request(filters, user=user)
     candidates = filter_tree.apply(candidates)
 
     try:
