@@ -9,8 +9,9 @@
 .hp-conn { display: flex; align-items: center; gap: 14px; padding: 13px 8px; border-bottom: 1px solid #f0f0f0; cursor: pointer; border-radius: 10px; transition: background .15s; }
 .hp-conn:last-child { border-bottom: none; }
 .hp-conn:hover { background: #fafafa; }
-.hp-av { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
-.hp-av--sm { width: 40px; height: 40px; font-size: 15px; }
+.hp-av { width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,.12); overflow: hidden; background: #e8e4e6; }
+.hp-av--sm { width: 40px; height: 40px; }
+.hp-av-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .hp-name { font-weight: 600; font-size: 14px; color: #1a1a1a; }
 .hp-status { font-size: 12px; color: #4caf50; font-weight: 500; }
 

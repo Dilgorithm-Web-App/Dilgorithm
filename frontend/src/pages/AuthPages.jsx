@@ -1,7 +1,7 @@
 import { useState, useContext, useRef } from 'react';
 import { AuthContext } from '../AuthContext';
 import api from '../api';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import ReCAPTCHA from 'react-google-recaptcha';
 import dgHeartLogo from '../assets/dg_heart_logo.png';
@@ -58,6 +58,7 @@ export const Login = () => {
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundAttachment: 'fixed',
+                backgroundColor: 'transparent',
                 padding: '0',
             }}
         >
@@ -144,8 +145,11 @@ export const Login = () => {
                         }}
                     />
                     <div style={{ height: '22px' }} />
-                    <p style={{ marginTop: 0, marginBottom: '18px' }}>
+                    <p style={{ marginTop: 0, marginBottom: '10px' }}>
                         Need an account? <a href="/register">Register here</a>.
+                    </p>
+                    <p style={{ marginTop: 0, marginBottom: '18px' }}>
+                        Forgot password? <Link to="/forgot-password">Reset it here</Link>.
                     </p>
 
                     <div
@@ -235,7 +239,7 @@ export const Register = () => {
     const [weight, setWeight] = useState('');
     const navigate = useNavigate();
     const registerPalette = {
-        pageBg: '#fff9fb',
+        pageBg: 'transparent',
         panelBg: '#fffdfd',
         panelBorder: '#f1e6eb',
         label: '#4b4a55',
@@ -532,7 +536,7 @@ export const RegisterCredentials2FA = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: '#fff9fb', padding: '40px 20px', boxSizing: 'border-box' }}>
+        <div style={{ minHeight: '100vh', background: 'transparent', padding: '40px 20px', boxSizing: 'border-box' }}>
             <div style={{ maxWidth: '620px', margin: '0 auto', background: '#fffdfd', border: '1px solid #f1e6eb', borderRadius: '14px', padding: '24px' }}>
                 <div style={{ marginBottom: '12px' }}>
                     <button

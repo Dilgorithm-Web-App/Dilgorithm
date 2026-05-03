@@ -5,13 +5,48 @@ from .matching_patterns import (
     ranked_match_records,
 )
 
+from .models import CustomUser
 
 def calculate_compatibility_score(user_interest, candidate_interest):
     """
     UC-19 compatibility scoring (delegates to Template Method + Adapter in matching_patterns).
+    Includes family background matching.
     """
-    return calculate_compatibility_from_interests(user_interest, candidate_interest)
-
+    score, reason_string = calculate_compatibility_from_interests(user_interest, candidate_interest)
+    
+    reasons = [reason_string] if reason_string and reason_string != "Exploring new possibilities together" else []
+    
+    # 3. Family Background Matching
+    user = user_interest.user
+    candidate = candidate_interest.user
+    try:
+        user_families = list(user.profile.family_members.all())
+        candidate_families = list(candidate.profile.family_members.all())
+    except Exception:
+        user_families = []
+        candidate_families = []
+        
+    user_occupations = {f.occupation.lower() for f in user_families if f.occupation}
+    candidate_occupations = {f.occupation.lower() for f in candidate_families if f.occupation}
+    shared_occupations = user_occupations.intersection(candidate_occupations)
+    if shared_occupations:
+        score += 15
+        occupations_str = "/".join([o.title() for o in shared_occupations])
+        reasons.append(f"Both families have a background in {occupations_str}")
+        
+    user_educations = {f.education.lower() for f in user_families if f.education}
+    candidate_educations = {f.education.lower() for f in candidate_families if f.education}
+    shared_educations = user_educations.intersection(candidate_educations)
+    if shared_educations:
+        score += 10
+        education_str = "/".join([e.title() for e in shared_educations])
+        reasons.append(f"Both families have {education_str} education level")
+        
+    # Cap score at 100
+    final_score = min(score, 100.0)
+    final_reason = ", ".join(reasons) if reasons else "Exploring new possibilities together"
+            
+    return final_score, final_reason
 
 def get_ranked_matches(user, filters=None):
     """

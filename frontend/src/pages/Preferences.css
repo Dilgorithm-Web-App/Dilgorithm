@@ -1,7 +1,7 @@
 .pref-page {
   min-height: 100%;
   padding: clamp(1.25rem, 4vw, 2.5rem);
-  background: linear-gradient(180deg, #fff1f2 0%, #fdf2f8 45%, #faf5ff 100%);
+  background: transparent;
   font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
   color: #0f0d0e;
   box-sizing: border-box;
@@ -43,6 +43,26 @@
   box-shadow: 0 2px 8px rgba(157, 0, 0, 0.08);
 }
 
+.pref-mini-link {
+  display: block;
+  width: fit-content;
+  margin: -0.5rem 0 1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #991b1b;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pref-mini-link:hover {
+  color: #c62828;
+}
+
 .pref-title {
   margin: 0 0 0.35rem;
   font-size: clamp(1.5rem, 4vw, 1.75rem);
@@ -56,6 +76,59 @@
   font-size: 0.95rem;
   line-height: 1.5;
   color: rgba(15, 13, 14, 0.65);
+}
+
+.pref-banner {
+  margin: 0 0 1rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.pref-banner--error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.pref-hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.8125rem;
+  color: rgba(15, 13, 14, 0.55);
+}
+
+.pref-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+.pref-pill {
+  padding: 0.45rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.pref-pill:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.pref-pill--on {
+  border-color: #e60076;
+  background: rgba(230, 0, 118, 0.08);
+  color: #9d174d;
 }
 
 .pref-form {

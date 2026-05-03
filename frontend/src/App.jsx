@@ -1,10 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useContext } from 'react';
 import { Login, Register, RegisterCredentials2FA } from './pages/AuthPages';
 import { RegisterPhotoPage } from './pages/RegisterPhotoPage';
 import { Feed } from './pages/Feed';
 import { Preferences } from './pages/Preferences';
 import { AuthContext } from './AuthContext';
-import { useContext } from 'react';
 import { Chat } from './pages/Chat';
 import { ChatListPage } from './pages/ChatListPage';
 import { HomePage } from './pages/HomePage';
@@ -15,11 +15,14 @@ import { AppConfigurationPage } from './pages/AppConfigurationPage';
 import { EngagementModerationPage } from './pages/EngagementModerationPage';
 import { DashboardLayout } from './components/DashboardLayout';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { ProfileViewPage } from './pages/ProfileViewPage';
+import { EditProfilePage } from './pages/EditProfilePage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);
     const hasToken = Boolean(localStorage.getItem('access_token'));
-    return (user || hasToken) ? children : <Navigate to="/login" />;
+    return user || hasToken ? children : <Navigate to="/login" />;
 };
 
 const DashboardRoute = ({ children }) => (
@@ -33,16 +36,19 @@ function App() {
         <Routes>
             <Route path="/" element={<Navigate to="/login" />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/register" element={<Register />} />
             <Route path="/register/credentials" element={<RegisterCredentials2FA />} />
             <Route path="/register/photo" element={<RegisterPhotoPage />} />
 
-            {/* Protected Routes with Dashboard Layout */}
             <Route path="/home" element={<DashboardRoute><HomePage /></DashboardRoute>} />
             <Route path="/feed" element={<DashboardRoute><Feed /></DashboardRoute>} />
             <Route path="/search" element={<DashboardRoute><SearchPage /></DashboardRoute>} />
+            <Route path="/profile/:userId" element={<DashboardRoute><ProfileViewPage /></DashboardRoute>} />
+            <Route path="/edit-profile" element={<DashboardRoute><EditProfilePage /></DashboardRoute>} />
             <Route path="/settings" element={<DashboardRoute><SettingsPage /></DashboardRoute>} />
             <Route path="/preferences" element={<DashboardRoute><Preferences /></DashboardRoute>} />
+            <Route path="/profile/edit" element={<DashboardRoute><EditProfilePage /></DashboardRoute>} />
             <Route path="/engagement-moderation" element={<DashboardRoute><EngagementModerationPage /></DashboardRoute>} />
             <Route path="/app-configuration" element={<DashboardRoute><AppConfigurationPage /></DashboardRoute>} />
             <Route path="/about-us" element={<DashboardRoute><AboutUsPage /></DashboardRoute>} />

@@ -1,13 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
+import { useCatalogMetadata } from '../hooks/useCatalogMetadata';
 import './Preferences.css';
+import { FamilyForm } from '../components/FamilyForm';
+
+function mergeOption(value, options) {
+    const list = Array.isArray(options) ? [...options] : [];
+    if (value && !list.includes(value)) list.unshift(value);
+    return list;
+}
 
 export const Preferences = () => {
-    const [interests, setInterests] = useState('');
+    const [selectedInterests, setSelectedInterests] = useState([]);
     const [sect, setSect] = useState('');
     const [location, setLocation] = useState('');
+    const [prefsLoaded, setPrefsLoaded] = useState(false);
     const navigate = useNavigate();
+
+    const { data: catalogData, loading: catalogLoading, error: catalogError } = useCatalogMetadata();
+
+    const filters = catalogData?.filters;
+    const availableInterests = catalogData?.interests ?? [];
+
+    const locationOptions = useMemo(() => mergeOption(location, filters?.locations), [location, filters?.locations]);
+    const sectOptions = useMemo(() => mergeOption(sect, filters?.sects), [sect, filters?.sects]);
 
     useEffect(() => {
         const fetchPreferences = async () => {
@@ -15,26 +32,32 @@ export const Preferences = () => {
                 const response = await api.get('accounts/preferences/');
                 const data = response.data;
                 const list = data.interestList;
-                setInterests(Array.isArray(list) ? list.join(', ') : '');
+                setSelectedInterests(Array.isArray(list) ? [...list] : []);
                 setSect(data.partnerCriteria?.sect || '');
                 setLocation(data.partnerCriteria?.location || '');
             } catch (error) {
                 console.error('Failed to load preferences:', error);
+            } finally {
+                setPrefsLoaded(true);
             }
         };
         fetchPreferences();
     }, []);
 
+    const toggleInterest = (label) => {
+        setSelectedInterests((prev) =>
+            prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label],
+        );
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const interestArray = interests.split(',').map((item) => item.trim()).filter((item) => item !== '');
-
         const payload = {
-            interestList: interestArray,
+            interestList: selectedInterests,
             partnerCriteria: {
-                sect: sect,
-                location: location,
+                sect,
+                location,
             },
         };
 
@@ -53,23 +76,46 @@ export const Preferences = () => {
                 <button type="button" className="pref-back" onClick={() => navigate('/settings')}>
                     Back
                 </button>
+                <button type="button" className="pref-mini-link" onClick={() => navigate('/edit-profile')}>
+                    Edit photo & bio
+                </button>
                 <h1 className="pref-title">Set Your Preferences</h1>
                 <p className="pref-sub">Help the Dilgorithm AI find your perfect match.</p>
 
+                {catalogError ? (
+                    <p className="pref-banner pref-banner--error" role="alert">
+                        Could not load filter lists. Check connection.
+                    </p>
+                ) : null}
+                {catalogLoading && !catalogData ? (
+                    <p className="pref-banner">Loading options…</p>
+                ) : null}
+
                 <form className="pref-form" onSubmit={handleSubmit}>
                     <div className="pref-field">
-                        <label className="pref-label" htmlFor="pref-interests">
-                            Your interests (comma separated)
-                        </label>
-                        <input
-                            id="pref-interests"
-                            className="pref-input"
-                            type="text"
-                            value={interests}
-                            onChange={(e) => setInterests(e.target.value)}
-                            placeholder="e.g. Reading, Hiking, Cooking"
-                            autoComplete="off"
-                        />
+                        <span className="pref-label" id="pref-interests-label">
+                            Your interests
+                        </span>
+                        <p className="pref-hint">Tap to select from server-provided interests.</p>
+                        <div className="pref-pills" role="group" aria-labelledby="pref-interests-label">
+                            {availableInterests.map((item) => {
+                                const on = selectedInterests.includes(item);
+                                return (
+                                    <button
+                                        key={item}
+                                        type="button"
+                                        className={`pref-pill ${on ? 'pref-pill--on' : ''}`}
+                                        aria-pressed={on}
+                                        onClick={() => toggleInterest(item)}
+                                    >
+                                        {item}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {prefsLoaded && availableInterests.length === 0 && !catalogLoading ? (
+                            <p className="pref-hint">No interests returned from the server.</p>
+                        ) : null}
                     </div>
 
                     <div className="pref-field">
@@ -81,11 +127,14 @@ export const Preferences = () => {
                             className="pref-select"
                             value={sect}
                             onChange={(e) => setSect(e.target.value)}
+                            disabled={!filters?.sects?.length && !sect}
                         >
                             <option value="">Any</option>
-                            <option value="Sunni">Sunni</option>
-                            <option value="Shia">Shia</option>
-                            <option value="Just Muslim">Just Muslim</option>
+                            {sectOptions.map((opt) => (
+                                <option key={opt} value={opt}>
+                                    {opt}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
@@ -93,15 +142,20 @@ export const Preferences = () => {
                         <label className="pref-label" htmlFor="pref-location">
                             Preferred location
                         </label>
-                        <input
+                        <select
                             id="pref-location"
-                            className="pref-input"
-                            type="text"
+                            className="pref-select"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
-                            placeholder="e.g. Lahore, Pakistan"
-                            autoComplete="off"
-                        />
+                            disabled={!filters?.locations?.length && !location}
+                        >
+                            <option value="">Any</option>
+                            {locationOptions.map((opt) => (
+                                <option key={opt} value={opt}>
+                                    {opt}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="pref-actions">
@@ -111,7 +165,7 @@ export const Preferences = () => {
                         <button
                             type="button"
                             className="pref-btn pref-btn--profile"
-                            onClick={() => window.location.assign('/figma-import/slide1.html')}
+                            onClick={() => navigate('/edit-profile')}
                         >
                             Edit profile
                         </button>
@@ -121,6 +175,8 @@ export const Preferences = () => {
                     </div>
                 </form>
             </div>
+            
+            <FamilyForm />
         </div>
     );
 };

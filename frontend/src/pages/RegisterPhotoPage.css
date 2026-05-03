@@ -5,7 +5,7 @@
   justify-content: center;
   padding: 32px 20px;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #fff1f2 0%, #fdf2f8 45%, #faf5ff 100%);
+  background: transparent;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -149,4 +149,41 @@
   text-align: center;
   color: #991b1b;
   font-size: 0.9rem;
+}
+
+.rp-required-banner {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.rp-required-banner--emphasis {
+  animation: rpShake 0.5s ease;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+@keyframes rpShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.rp-continue-wrap {
+  margin-top: 8px;
 }
