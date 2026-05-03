@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import './SearchPage.css';
 
+// ── Design Patterns ──
+import { adaptFeedProfile } from '../patterns/ApiResponseAdapter';     // Adapter
+import { buildSearchFilters } from '../patterns/FilterComposite';      // Composite
+import { MatchIterator } from '../patterns/MatchIterator';             // Iterator
+import { eventBus } from '../patterns/EventBus';                       // Observer
+import { ProfileCardTemplate } from '../patterns/ProfileCardTemplate'; // Template
+
 export const SearchPage = () => {
     const [query, setQuery] = useState('');
     const [profiles, setProfiles] = useState([]);
@@ -12,27 +19,23 @@ export const SearchPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetch = async () => {
+        const fetchData = async () => {
             try {
                 const res = await api.get('accounts/feed/');
-                setProfiles(res.data || []);
-                setFiltered(res.data || []);
+                // Adapter pattern — normalise raw API data to UnifiedProfile
+                const adapted = (res.data || []).map(adaptFeedProfile);
+                setProfiles(adapted);
+                setFiltered(adapted);
             } catch (e) { console.error(e); }
         };
-        fetch();
+        fetchData();
     }, []);
 
     useEffect(() => {
-        let r = profiles;
-        if (query.trim()) {
-            const q = query.toLowerCase();
-            r = r.filter(p => (p.fullName || p.username || '').toLowerCase().includes(q) || (p.bio || '').toLowerCase().includes(q));
-        }
-        if (filters.sect) r = r.filter(p => (p.sect || '').toLowerCase().includes(filters.sect.toLowerCase()));
-        if (filters.location) r = r.filter(p => (p.location || '').toLowerCase().includes(filters.location.toLowerCase()));
-        if (filters.education) r = r.filter(p => (p.education || '').toLowerCase().includes(filters.education.toLowerCase()));
-        if (filters.caste) r = r.filter(p => (p.caste || '').toLowerCase().includes(filters.caste.toLowerCase()));
-        setFiltered(r);
+        // Composite pattern — build filter tree and apply uniformly
+        const filterTree = buildSearchFilters(filters, query);
+        const result = filterTree.apply(profiles);
+        setFiltered(result);
     }, [query, filters, profiles]);
 
     const toggleFavorite = async (id) => {
@@ -44,12 +47,32 @@ export const SearchPage = () => {
                 else next.delete(id);
                 return next;
             });
+            // Observer pattern — publish event
+            eventBus.publish('favorite.toggled', { userId: id, isFavorite: res.data.is_favorite });
         } catch (err) {
             console.error('Failed to toggle favorite', err);
         }
     };
 
-    const COLORS = ['linear-gradient(135deg,#E57373,#EF5350)', 'linear-gradient(135deg,#64B5F6,#42A5F5)', 'linear-gradient(135deg,#81C784,#66BB6A)', 'linear-gradient(135deg,#BA68C8,#AB47BC)'];
+    // Iterator pattern — wrap filtered results for sequential access
+    const matchIterator = new MatchIterator(filtered);
+    const displayList = matchIterator.toArray();
+
+    // Template pattern — render callbacks for the ProfileCardTemplate
+    const renderBadge = (p) =>
+        p.compatibilityScore ? <span className="sp-compat-tag sp-compat-tag--red">{p.compatibilityScore}%</span> : null;
+
+    const renderMeta = (p) => (
+        <>
+            {p.location && <div className="sp-profile-meta">📍 {p.location}</div>}
+            {p.education && <div className="sp-profile-meta">🎓 {p.education}</div>}
+            {p.bio && <div className="sp-profile-meta">💼 {p.bio}</div>}
+            {p.compatibilityScore && (
+                <div className="sp-compat-tags">{renderBadge(p)}</div>
+            )}
+            <button className="sp-view-btn" onClick={() => navigate(`/profile/${p.id}`)}>View Profile</button>
+        </>
+    );
 
     return (
         <div className="sp-wrap">
@@ -65,83 +88,57 @@ export const SearchPage = () => {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B1A1A" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="#8B1A1A"/><circle cx="16" cy="12" r="2" fill="#8B1A1A"/><circle cx="10" cy="18" r="2" fill="#8B1A1A"/></svg>
                     <span>Filters</span>
                 </div>
-
                 <div className="sp-filter-group">
                     <label className="sp-label">Location</label>
                     <select className="sp-select" value={filters.location} onChange={e => setFilters({...filters, location: e.target.value})}>
                         <option value="">Select location</option>
-                        <option value="Karachi">Karachi</option>
-                        <option value="Lahore">Lahore</option>
-                        <option value="Islamabad">Islamabad</option>
+                        <option value="Karachi">Karachi</option><option value="Lahore">Lahore</option><option value="Islamabad">Islamabad</option>
                     </select>
                 </div>
                 <div className="sp-filter-group">
                     <label className="sp-label">Sect</label>
                     <select className="sp-select" value={filters.sect} onChange={e => setFilters({...filters, sect: e.target.value})}>
                         <option value="">Select sect</option>
-                        <option value="Sunni">Sunni</option>
-                        <option value="Shia">Shia</option>
-                        <option value="Just Muslim">Just Muslim</option>
+                        <option value="Sunni">Sunni</option><option value="Shia">Shia</option><option value="Just Muslim">Just Muslim</option>
                     </select>
                 </div>
                 <div className="sp-filter-group">
                     <label className="sp-label">Caste</label>
                     <select className="sp-select" value={filters.caste} onChange={e => setFilters({...filters, caste: e.target.value})}>
                         <option value="">Select caste</option>
-                        <option value="Syed">Syed</option>
-                        <option value="Rajput">Rajput</option>
-                        <option value="Arain">Arain</option>
-                        <option value="Jat">Jat</option>
-                        <option value="Other">Other</option>
+                        <option value="Syed">Syed</option><option value="Rajput">Rajput</option><option value="Arain">Arain</option><option value="Jat">Jat</option><option value="Other">Other</option>
                     </select>
                 </div>
                 <div className="sp-filter-group">
                     <label className="sp-label">Education Status</label>
                     <select className="sp-select" value={filters.education} onChange={e => setFilters({...filters, education: e.target.value})}>
                         <option value="">Select education level</option>
-                        <option value="bachelors">Bachelors</option>
-                        <option value="masters">Masters</option>
-                        <option value="phd">PhD</option>
+                        <option value="bachelors">Bachelors</option><option value="masters">Masters</option><option value="phd">PhD</option>
                     </select>
                 </div>
-
                 <button className="sp-apply-btn" onClick={() => {}}>Apply Filters</button>
             </div>
 
             {/* Browse Profiles */}
             <h3 className="sp-browse-title">Browse Profiles</h3>
-            {filtered.length === 0 ? (
+            {displayList.length === 0 ? (
                 <div className="sp-empty">
                     <span style={{ fontSize: 40 }}>🔍</span>
                     <p>No profiles found. Try different filters.</p>
                 </div>
             ) : (
                 <div className="sp-grid">
-                    {filtered.map((p, i) => (
-                        <div key={p.id} className="sp-profile-card" style={{ animationDelay: `${i * .06}s` }}>
-                            <div className="sp-profile-photo" style={{ background: p.profileImage ? undefined : COLORS[i % 4] }}>
-                                {p.profileImage ? (
-                                    <img className="sp-profile-photo-img" src={p.profileImage} alt="" />
-                                ) : (
-                                    <span className="sp-profile-initial">{(p.fullName || p.username || 'U')[0].toUpperCase()}</span>
-                                )}
-                                <button className="sp-heart-btn" onClick={() => toggleFavorite(p.id)} style={{ color: favorites.has(p.id) ? '#E57373' : 'inherit' }}>
-                                    {favorites.has(p.id) ? '♥' : '♡'}
-                                </button>
-                            </div>
-                            <div className="sp-profile-body">
-                                <h4 className="sp-profile-name">{p.fullName || p.username}{p.age ? `, ${p.age}` : ''}</h4>
-                                {p.location && <div className="sp-profile-meta">📍 {p.location}</div>}
-                                {p.education && <div className="sp-profile-meta">🎓 {p.education}</div>}
-                                {p.bio && <div className="sp-profile-meta">💼 {p.bio}</div>}
-                                {p.compatibility_score && (
-                                    <div className="sp-compat-tags">
-                                        <span className="sp-compat-tag sp-compat-tag--red">{p.compatibility_score}%</span>
-                                    </div>
-                                )}
-                                <button className="sp-view-btn" onClick={() => navigate(`/profile/${p.id}`)}>View Profile</button>
-                            </div>
-                        </div>
+                    {/* Template pattern — fixed card skeleton with variable render slots */}
+                    {displayList.map((p, i) => (
+                        <ProfileCardTemplate
+                            key={p.id}
+                            profile={p}
+                            index={i}
+                            className="sp-profile-card"
+                            renderMeta={renderMeta}
+                            onFavorite={toggleFavorite}
+                            isFavorite={favorites.has(p.id)}
+                        />
                     ))}
                 </div>
             )}

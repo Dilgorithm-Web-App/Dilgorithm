@@ -30,6 +30,13 @@ from .serializers import (
     FamilyMemberSerializer,
 )
 from .ai_engine import get_ranked_matches
+# ---- Design Patterns (Singleton, Observer, Factory, State) ----
+from .patterns import (
+    event_bus,                # Observer pattern
+    ViewResponseFactory,      # Factory pattern
+    AccountStateMachine,      # State pattern
+    notification_service,     # Singleton pattern
+)
 
 
 # ---------------------------------------------------------------------------
@@ -84,6 +91,8 @@ class RegisterView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
         ensure_user_records(user)
+        # Observer pattern — publish registration event
+        event_bus.publish("user.registered", {"email": user.email})
 
 
 def verify_recaptcha(captcha_token):
@@ -578,29 +587,27 @@ class ToggleFavoriteView(APIView):
     def post(self, request, *args, **kwargs):
         target_id = request.data.get('target_id')
         if not target_id:
-            return Response({"detail": "target_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            # Factory pattern — uniform error response
+            return ViewResponseFactory.error("target_id is required")
 
         try:
             target_user = CustomUser.objects.get(id=target_id)
             user_profile = request.user.profile
 
-            
-        try:
-            target_user = CustomUser.objects.get(id=target_id)
-            user_profile = request.user.profile
-            
             if target_user in user_profile.favorites.all():
                 user_profile.favorites.remove(target_user)
-                return Response({"detail": "Removed from favorites", "is_favorite": False}, status=status.HTTP_200_OK)
+                # Observer pattern — publish favorite event
+                event_bus.publish("favorite.toggled", {"user": request.user.email, "target": target_user.email, "is_favorite": False})
+                return ViewResponseFactory.success("Removed from favorites", {"is_favorite": False})
             else:
                 user_profile.favorites.add(target_user)
-                return Response({"detail": "Added to favorites", "is_favorite": True}, status=status.HTTP_200_OK)
+                event_bus.publish("favorite.toggled", {"user": request.user.email, "target": target_user.email, "is_favorite": True})
+                return ViewResponseFactory.success("Added to favorites", {"is_favorite": True})
 
-                
         except CustomUser.DoesNotExist:
-            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return ViewResponseFactory.not_found("User not found")
         except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ViewResponseFactory.error(str(e), http_status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # ---------------------------------------------------------------------------
@@ -677,15 +684,16 @@ class ReportUserView(APIView):
         reason = (request.data.get('reason') or '').strip()
 
         if not reported_user_id or not reason:
-            return Response({"detail": "reported_user_id and reason are required."}, status=status.HTTP_400_BAD_REQUEST)
+            # Factory pattern — uniform error response
+            return ViewResponseFactory.error("reported_user_id and reason are required.")
 
         try:
             reported_user = CustomUser.objects.get(id=reported_user_id)
         except CustomUser.DoesNotExist:
-            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return ViewResponseFactory.not_found("User not found.")
 
         if reported_user == request.user:
-            return Response({"detail": "Cannot report yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return ViewResponseFactory.error("Cannot report yourself.")
 
         report = Report.objects.create(
             reporter=request.user,
@@ -693,7 +701,12 @@ class ReportUserView(APIView):
             reason=reason,
         )
         serializer = ReportSerializer(report)
-        return Response({"detail": "Report submitted successfully.", "report": serializer.data}, status=status.HTTP_201_CREATED)
+        # Observer pattern — publish report event
+        event_bus.publish("report.created", {
+            "reporter_email": request.user.email,
+            "target_email": reported_user.email,
+        })
+        return ViewResponseFactory.created("Report submitted successfully.", {"report": serializer.data})
 
 
 class BlockUserView(APIView):
@@ -702,23 +715,34 @@ class BlockUserView(APIView):
     def post(self, request, *args, **kwargs):
         target_id = request.data.get('target_id')
         if not target_id:
-            return Response({"detail": "target_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return ViewResponseFactory.error("target_id is required.")
 
         try:
             target = CustomUser.objects.get(id=target_id)
         except CustomUser.DoesNotExist:
-            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return ViewResponseFactory.not_found("User not found.")
 
         if target == request.user:
-            return Response({"detail": "Cannot block yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return ViewResponseFactory.error("Cannot block yourself.")
 
         existing = BlockedUser.objects.filter(blocker=request.user, blocked=target).first()
         if existing:
             existing.delete()
-            return Response({"detail": "User unblocked.", "is_blocked": False}, status=status.HTTP_200_OK)
+            # Observer pattern — publish block event
+            event_bus.publish("user.blocked", {
+                "blocker_email": request.user.email,
+                "blocked_email": target.email,
+                "is_blocked": False,
+            })
+            return ViewResponseFactory.success("User unblocked.", {"is_blocked": False})
         else:
             BlockedUser.objects.create(blocker=request.user, blocked=target)
-            return Response({"detail": "User blocked.", "is_blocked": True}, status=status.HTTP_201_CREATED)
+            event_bus.publish("user.blocked", {
+                "blocker_email": request.user.email,
+                "blocked_email": target.email,
+                "is_blocked": True,
+            })
+            return ViewResponseFactory.created("User blocked.", {"is_blocked": True})
 
 
 class BlockedUsersListView(generics.ListAPIView):

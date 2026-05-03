@@ -4,6 +4,12 @@ import api from '../api';
 import { CHAT_AVATAR_COLORS } from '../data/chatContacts';
 import './Chat.css';
 
+// ── Design Patterns ──
+import { adaptChatContact } from '../patterns/ApiResponseAdapter';     // Adapter
+import { PageState } from '../patterns/PageState';                     // State
+import { eventBus } from '../patterns/EventBus';                       // Observer
+import { notificationService } from '../patterns/NotificationService'; // Singleton
+
 export const Chat = () => {
     const { roomName } = useParams();
     const [contacts, setContacts] = useState([]);
@@ -19,6 +25,10 @@ export const Chat = () => {
     const [familyEmail, setFamilyEmail] = useState('');
     const [familyBusy, setFamilyBusy] = useState(false);
     const [familyErr, setFamilyErr] = useState('');
+    // State pattern — track message sending state
+    const [sendState, setSendState] = useState(PageState.idle());
+
+    // Adapter pattern — adapted contacts for uniform access
     const activeContact = useMemo(
         () => contacts.find((c) => Number(c.id) === contactId),
         [contacts, contactId]
@@ -32,14 +42,19 @@ export const Chat = () => {
     const headerColor =
         activeIndex >= 0 ? CHAT_AVATAR_COLORS[activeIndex % CHAT_AVATAR_COLORS.length] : CHAT_AVATAR_COLORS[0];
     const displayName =
-        activeContact?.fullName || activeContact?.username || activeContact?.email || (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
+        activeContact?.displayName || activeContact?.username || activeContact?.email || (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
     const headerStatus = activeContact?.status || 'Tap to chat';
 
     useEffect(() => {
         const loadContacts = async () => {
             try {
                 const { data } = await api.get('accounts/chat/contacts/');
-                setContacts(Array.isArray(data) ? data : []);
+                const raw = Array.isArray(data) ? data : [];
+                // Adapter pattern — normalise chat contacts to UnifiedProfile
+                const adapted = raw.map(adaptChatContact);
+                // Preserve the raw status field from the API for chat-specific display
+                const merged = adapted.map((a, i) => ({ ...a, status: raw[i]?.status || 'Tap to chat' }));
+                setContacts(merged);
             } catch (e) {
                 setError('Could not load chat contacts.');
             }
@@ -77,13 +92,15 @@ export const Chat = () => {
     const sendFamilyInvite = async () => {
         const email = (familyEmail || '').trim();
         if (!email) {
-            setFamilyErr('Enter the member’s email.');
+            setFamilyErr('Enter the member\u2019s email.');
             return;
         }
         setFamilyBusy(true);
         setFamilyErr('');
         try {
             await api.post('accounts/family/', { email, role: 'Family Member' });
+            // Singleton pattern — use notification service
+            notificationService.show(`Family link added for ${displayName}.`, 'success');
             setToastMsg(`Family link added for ${displayName}.`);
             setTimeout(() => setToastMsg(''), 3000);
             setFamilyOpen(false);
@@ -98,14 +115,21 @@ export const Chat = () => {
         const text = input.trim();
         if (!text || !contactId) return;
 
+        // State pattern — transition to sending
+        setSendState(PageState.saving(null));
+
         api.post(`accounts/chat/messages/${contactId}/`, { message: text })
             .then(({ data }) => {
                 setMessages((prev) => [...prev, data]);
                 setInput('');
                 setError('');
+                setSendState(PageState.idle());
+                // Observer pattern — publish message sent event
+                eventBus.publish('message.sent', { contactId, message: text });
             })
             .catch((err) => {
                 setError(err.response?.data?.detail || 'Failed to send message.');
+                setSendState(PageState.error('Failed to send'));
             });
     };
 
@@ -135,7 +159,7 @@ export const Chat = () => {
                                 Cancel
                             </button>
                             <button type="button" className="ch-modal-btn ch-modal-btn--primary" disabled={familyBusy} onClick={sendFamilyInvite}>
-                                {familyBusy ? 'Saving…' : 'Add'}
+                                {familyBusy ? 'Saving\u2026' : 'Add'}
                             </button>
                         </div>
                     </div>
@@ -250,7 +274,7 @@ export const Chat = () => {
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Message..."
                     />
-                    <button type="submit" className="ch-send">
+                    <button type="submit" className="ch-send" disabled={sendState.isSaving}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                             <line x1="22" y1="2" x2="11" y2="13" />
                             <polygon points="22 2 15 22 11 13 2 9 22 2" />

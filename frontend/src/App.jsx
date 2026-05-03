@@ -172,28 +172,6 @@ function App() {
             <Route path="/onboarding" element={<OnboardingPage />} />
         </Routes>
     );
-  return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/register/credentials" element={<RegisterCredentials2FA />} />
-      <Route path="/register/photo" element={<RegisterPhotoPage />} />
-
-      {/* Protected Routes with Dashboard Layout */}
-      <Route path="/home" element={<DashboardRoute><HomePage /></DashboardRoute>} />
-      <Route path="/feed" element={<DashboardRoute><Feed /></DashboardRoute>} />
-      <Route path="/search" element={<DashboardRoute><SearchPage /></DashboardRoute>} />
-      <Route path="/settings" element={<DashboardRoute><SettingsPage /></DashboardRoute>} />
-      <Route path="/preferences" element={<DashboardRoute><Preferences /></DashboardRoute>} />
-      <Route path="/engagement-moderation" element={<DashboardRoute><EngagementModerationPage /></DashboardRoute>} />
-      <Route path="/app-configuration" element={<DashboardRoute><AppConfigurationPage /></DashboardRoute>} />
-      <Route path="/about-us" element={<DashboardRoute><AboutUsPage /></DashboardRoute>} />
-      <Route path="/chat-list" element={<DashboardRoute><ChatListPage /></DashboardRoute>} />
-      <Route path="/chat/:roomName" element={<DashboardRoute><Chat /></DashboardRoute>} />
-      <Route path="/onboarding" element={<OnboardingPage />} />
-    </Routes>
-  );
 }
 
 export default App;

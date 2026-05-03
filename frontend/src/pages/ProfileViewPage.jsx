@@ -3,13 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 import './ProfileViewPage.css';
 
+// ── Design Patterns ──
+import { adaptUserDetail } from '../patterns/ApiResponseAdapter'; // Adapter
+import { PageState } from '../patterns/PageState';                // State
+import { eventBus } from '../patterns/EventBus';                  // Observer
+import { notificationService } from '../patterns/NotificationService'; // Singleton
+
 const COLORS = ['#E57373','#64B5F6','#81C784','#BA68C8','#FFB74D','#4DD0E1'];
 
 export const ProfileViewPage = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
-    const [profile, setProfile] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // State pattern — immutable page state transitions
+    const [pageState, setPageState] = useState(PageState.loading());
     const [isFav, setIsFav] = useState(false);
     const [isBlocked, setIsBlocked] = useState(false);
     const [toast, setToast] = useState('');
@@ -18,23 +24,34 @@ export const ProfileViewPage = () => {
 
     useEffect(() => {
         const load = async () => {
+            setPageState(PageState.loading());
             try {
                 const { data } = await api.get(`accounts/user/${userId}/`);
-                setProfile(data);
-                setIsFav(data.is_favorite || false);
-                setIsBlocked(Boolean(data.is_blocked));
-            } catch { setProfile(null); }
-            setLoading(false);
+                // Adapter pattern — normalise API response to UnifiedProfile
+                const profile = adaptUserDetail(data);
+                setPageState(PageState.loaded(profile));
+                setIsFav(profile.isFavorite);
+                setIsBlocked(profile.isBlocked);
+            } catch {
+                setPageState(PageState.error('User not found.'));
+            }
         };
         load();
     }, [userId]);
 
-    const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+    // Singleton pattern — use notification service for toasts
+    const showToast = (msg) => {
+        setToast(msg);
+        notificationService.show(msg, 'info');
+        setTimeout(() => setToast(''), 3000);
+    };
 
     const toggleFav = async () => {
         try {
             const { data } = await api.post('accounts/favorites/toggle/', { target_id: Number(userId) });
             setIsFav(data.is_favorite);
+            // Observer pattern — publish event for cross-component reactivity
+            eventBus.publish('favorite.toggled', { userId: Number(userId), isFavorite: data.is_favorite });
             showToast(data.is_favorite ? 'Added to favorites ♥' : 'Removed from favorites');
         } catch { showToast('Could not update favorites'); }
     };
@@ -43,6 +60,8 @@ export const ProfileViewPage = () => {
         try {
             const { data } = await api.post('accounts/block/', { target_id: Number(userId) });
             setIsBlocked(data.is_blocked);
+            // Observer pattern — publish block event
+            eventBus.publish('user.blocked', { userId: Number(userId), isBlocked: data.is_blocked });
             showToast(data.is_blocked ? 'User blocked' : 'User unblocked');
         } catch { showToast('Could not update block status'); }
     };
@@ -51,16 +70,20 @@ export const ProfileViewPage = () => {
         if (!reportReason.trim()) return;
         try {
             await api.post('accounts/report/', { reported_user_id: Number(userId), reason: reportReason });
+            // Observer pattern — publish report event
+            eventBus.publish('report.submitted', { userId: Number(userId) });
             showToast('Report submitted. Thank you.');
             setReportModal(false);
             setReportReason('');
         } catch { showToast('Could not submit report'); }
     };
 
-    if (loading) return <div className="pv-loading"><div className="pv-spinner" /></div>;
-    if (!profile) return <div className="pv-wrap"><div className="pv-card"><p className="pv-empty">User not found.</p><button className="pv-back" onClick={() => navigate(-1)}>← Go Back</button></div></div>;
+    // State pattern — render based on current page state
+    if (pageState.isLoading) return <div className="pv-loading"><div className="pv-spinner" /></div>;
+    if (pageState.isError) return <div className="pv-wrap"><div className="pv-card"><p className="pv-empty">{pageState.error}</p><button className="pv-back" onClick={() => navigate(-1)}>← Go Back</button></div></div>;
 
-    const name = profile.fullName || profile.username || 'User';
+    const profile = pageState.data;
+    const name = profile.displayName;
     const initial = name[0]?.toUpperCase() || 'U';
     const img = profile.profileImage;
     const color = COLORS[Number(userId) % COLORS.length];
@@ -92,7 +115,7 @@ export const ProfileViewPage = () => {
                         <div className="pv-avatar" style={{ background: color }}>{initial}</div>
                     )}
                     <h1 className="pv-name">{name}{profile.age ? `, ${profile.age}` : ''}</h1>
-                    {profile.is_online && <span className="pv-online-badge">● Online</span>}
+                    {profile.isOnline && <span className="pv-online-badge">● Online</span>}
                 </div>
 
                 <div className="pv-details">
@@ -105,11 +128,11 @@ export const ProfileViewPage = () => {
                     {profile.caste && <div className="pv-detail-row"><span className="pv-icon">🏛️</span><span>{profile.caste}</span></div>}
                 </div>
 
-                {profile.interestList && profile.interestList.length > 0 && (
+                {profile.interests && profile.interests.length > 0 && (
                     <div className="pv-interests">
                         <h3 className="pv-section-title">Interests</h3>
                         <div className="pv-tags">
-                            {profile.interestList.map(i => <span key={i} className="pv-tag">✨ {i}</span>)}
+                            {profile.interests.map(i => <span key={i} className="pv-tag">✨ {i}</span>)}
                         </div>
                     </div>
                 )}
