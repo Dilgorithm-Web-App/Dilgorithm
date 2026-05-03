@@ -39,6 +39,7 @@ from .serializers import (
     FamilyMemberSerializer,
 )
 from .ai_engine import get_ranked_matches
+from .match_storage import replace_match_recommendations
 # ---- Design Patterns (Singleton, Observer, Factory, State) ----
 from .patterns import (
     event_bus,                # Observer pattern
@@ -374,6 +375,8 @@ class MatchFeedView(generics.ListAPIView):
         # Exclude blocked users
         blocked_ids = get_blocked_ids(user)
         ranked_data = [r for r in ranked_data if r['candidate_id'] not in blocked_ids]
+
+        replace_match_recommendations(user, ranked_data)
 
         candidate_ids = [item['candidate_id'] for item in ranked_data]
 

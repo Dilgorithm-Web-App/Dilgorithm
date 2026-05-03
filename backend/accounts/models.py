@@ -131,6 +131,36 @@ class BlockedUser(models.Model):
         return f"{self.blocker.email} blocked {self.blocked.email}"
 
 
+class MatchRecommendation(models.Model):
+    """AI-ranked feed matches persisted per viewer (refreshed on feed load and via sync_ai_matches)."""
+
+    viewer = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="ai_match_recommendations_made",
+    )
+    candidate = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="ai_match_recommendations_received",
+    )
+    score = models.FloatField()
+    reason = models.TextField(blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-score", "candidate_id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["viewer", "candidate"],
+                name="unique_ai_match_viewer_candidate",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.viewer.email} → {self.candidate.email} ({self.score})"
+
+
 class ChatMessage(models.Model):
     sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='messages_sent')
     recipient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='messages_received')
