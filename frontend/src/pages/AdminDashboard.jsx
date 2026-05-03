@@ -20,7 +20,7 @@ const TAB_CONFIG = [
  * Admin Moderation Dashboard — accessible only to is_staff / is_superuser.
  *
  * Two tabs:
- *   1. Pending Reports — review and approve/dismiss user reports.
+ *   1. Pending Reports — ban, warn, or dismiss user reports.
  *   2. Block List — view all current blocks system-wide.
  */
 export const AdminDashboard = () => {
@@ -74,12 +74,11 @@ export const AdminDashboard = () => {
                 `accounts/admin/reports/${reportId}/resolve/`,
                 { action },
             );
-            showToast(data.detail || `Report ${action}d.`, 'success');
-            // Refresh both lists (approve may add to block list)
+            showToast(data.detail || 'Report updated.', 'success');
             await Promise.all([fetchReports(), fetchBlocklist()]);
         } catch (e) {
             showToast(
-                e.response?.data?.detail || `Failed to ${action} report.`,
+                e.response?.data?.detail || 'Could not update this report.',
                 'error',
             );
         } finally {
@@ -227,13 +226,25 @@ const ReportsTable = ({ reports, resolving, onResolve, formatDate }) => {
                                 <td>
                                     <div className="ad-actions">
                                         <button
-                                            className="ad-btn ad-btn--approve"
+                                            type="button"
+                                            className="ad-btn ad-btn--ban"
                                             disabled={resolving === r.id}
-                                            onClick={() => onResolve(r.id, 'approve')}
+                                            onClick={() => onResolve(r.id, 'ban')}
+                                            title="Ban reported user from the platform"
                                         >
-                                            {resolving === r.id ? '…' : '✓ Approve'}
+                                            {resolving === r.id ? '…' : 'Ban user'}
                                         </button>
                                         <button
+                                            type="button"
+                                            className="ad-btn ad-btn--warn"
+                                            disabled={resolving === r.id}
+                                            onClick={() => onResolve(r.id, 'warn')}
+                                            title="Record a warning without banning"
+                                        >
+                                            Warn
+                                        </button>
+                                        <button
+                                            type="button"
                                             className="ad-btn ad-btn--dismiss"
                                             disabled={resolving === r.id}
                                             onClick={() => onResolve(r.id, 'dismiss')}

@@ -1,5 +1,14 @@
 /* HOME PAGE — Content only (hp- prefix) */
-.hp-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; max-width: 920px; align-content: start; }
+.hp-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 920px;
+  margin-inline: auto;
+  box-sizing: border-box;
+  align-content: start;
+}
 .hp-card { background: #fff; border-radius: 20px; padding: 28px 32px; box-shadow: 0 2px 16px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.04); animation: hpIn 0.45s ease both; }
 .hp-title { font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 0 0 18px; }
 .hp-card--conn { animation-delay: .1s; }

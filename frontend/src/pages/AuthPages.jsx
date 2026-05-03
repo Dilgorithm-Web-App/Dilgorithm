@@ -8,6 +8,9 @@ import dgHeartLogo from '../assets/dg_heart_logo.png';
 import dilgorithmLogoText from '../assets/dilgorithm-logo-text.png';
 import './AuthPages.css';
 
+/** Same UI font as login (Plus Jakarta Sans is loaded in index.html). */
+const AUTH_UI_FONT = '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+
 export const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -18,15 +21,16 @@ export const Login = () => {
 
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    const captchaRequired = Boolean(recaptchaSiteKey);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!captchaToken) {
+        if (captchaRequired && !captchaToken) {
             setStatusMessage('Please complete CAPTCHA before signing in.');
             return;
         }
 
-        const success = await login(email, password, captchaToken);
+        const success = await login(email, password, captchaToken || '');
         if (!success) {
             recaptchaRef.current?.reset();
             setCaptchaToken(null);
@@ -34,13 +38,13 @@ export const Login = () => {
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
-        if (!captchaToken) {
+        if (captchaRequired && !captchaToken) {
             setStatusMessage('Complete CAPTCHA before using Google sign-in.');
             return;
         }
 
         setStatusMessage('');
-        const success = await loginWithGoogle(credentialResponse, captchaToken);
+        const success = await loginWithGoogle(credentialResponse, captchaToken || '');
         if (!success) {
             recaptchaRef.current?.reset();
             setCaptchaToken(null);
@@ -84,6 +88,10 @@ export const Login = () => {
                         <div className="link-group">
                             <p>Need an account? <Link to="/register">Register</Link></p>
                             <p>Forgot password? <Link to="/forgot-password">Reset</Link></p>
+                            <p>
+                                Staff / moderator?{' '}
+                                <Link to="/login/admin">Log in to admin dashboard</Link>
+                            </p>
                         </div>
 
                         {statusMessage && (
@@ -108,8 +116,148 @@ export const Login = () => {
                                 size="normal"
                             />
                         ) : (
+                            <div style={{ fontSize: '13px', color: '#6b6375' }}>
+                                No reCAPTCHA site key — CAPTCHA skipped in local dev (backend must run with
+                                DEBUG and no RECAPTCHA_SECRET_KEY).
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="divider">
+                        <span>OR</span>
+                    </div>
+
+                    <div className="google-container">
+                        {googleClientId ? (
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => setStatusMessage('Google sign-in failed. Please try again.')}
+                                text="signin_with"
+                                shape="pill"
+                                theme="outline"
+                                size="medium"
+                            />
+                        ) : (
                             <div style={{ fontSize: '13px', color: '#b91c1c' }}>
-                                Set VITE_RECAPTCHA_SITE_KEY in frontend/.env
+                                Set VITE_GOOGLE_CLIENT_ID in frontend/.env
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
+        </div>
+    );
+};
+
+/** Same credentials + CAPTCHA as member login; after success, requires is_staff and lands on /admin. */
+export const AdminLogin = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [captchaToken, setCaptchaToken] = useState(null);
+    const [statusMessage, setStatusMessage] = useState('');
+    const { login, loginWithGoogle } = useContext(AuthContext);
+    const recaptchaRef = useRef(null);
+
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    const staffLoginOpts = { redirectTo: '/admin', staffOnly: true };
+    const captchaRequired = Boolean(recaptchaSiteKey);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (captchaRequired && !captchaToken) {
+            setStatusMessage('Please complete CAPTCHA before signing in.');
+            return;
+        }
+
+        const success = await login(email, password, captchaToken || '', staffLoginOpts);
+        if (!success) {
+            recaptchaRef.current?.reset();
+            setCaptchaToken(null);
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        if (captchaRequired && !captchaToken) {
+            setStatusMessage('Complete CAPTCHA before using Google sign-in.');
+            return;
+        }
+
+        setStatusMessage('');
+        const success = await loginWithGoogle(credentialResponse, captchaToken || '', staffLoginOpts);
+        if (!success) {
+            recaptchaRef.current?.reset();
+            setCaptchaToken(null);
+        }
+    };
+
+    return (
+        <div className="auth-page-container">
+            <section className="auth-hero" aria-label="Logo">
+                <img src={dgHeartLogo} alt="Dilgorithm logo" className="auth-hero-logo" />
+            </section>
+
+            <section className="auth-form-section" aria-label="Staff log in">
+                <div className="auth-card">
+                    <img
+                        src={dilgorithmLogoText}
+                        alt="Dilgorithm"
+                        className="auth-brand-image"
+                    />
+                    <h2 className="auth-header">Staff / moderator login</h2>
+                    <p style={{ margin: '0 0 12px', fontSize: '14px', color: '#6b6375' }}>
+                        Use your staff account to open the moderation dashboard. Member accounts cannot
+                        use this page.
+                    </p>
+
+                    <form className="auth-form" onSubmit={handleSubmit}>
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            className="auth-input"
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            className="auth-input"
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+
+                        <div className="link-group">
+                            <p>
+                                Not staff? <Link to="/login">Member login</Link>
+                            </p>
+                        </div>
+
+                        {statusMessage && (
+                            <p style={{ color: '#b91c1c', margin: '0', fontSize: '14px' }}>
+                                {statusMessage}
+                            </p>
+                        )}
+
+                        <button type="submit" className="qabool-hai-btn">
+                            Open admin dashboard
+                        </button>
+                    </form>
+
+                    <div className="captcha-wrapper">
+                        {recaptchaSiteKey ? (
+                            <ReCAPTCHA
+                                ref={recaptchaRef}
+                                sitekey={recaptchaSiteKey}
+                                onChange={(token) => {
+                                    setCaptchaToken(token);
+                                    if (token) setStatusMessage('');
+                                }}
+                                size="normal"
+                            />
+                        ) : (
+                            <div style={{ fontSize: '13px', color: '#6b6375' }}>
+                                No reCAPTCHA site key — CAPTCHA skipped in local dev (backend must run with
+                                DEBUG and no RECAPTCHA_SECRET_KEY).
                             </div>
                         )}
                     </div>
@@ -267,6 +415,7 @@ export const Register = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                fontFamily: AUTH_UI_FONT,
             }}
         >
             <div style={{ width: '100%', maxWidth: '920px', marginBottom: '10px', textAlign: 'left' }}>
@@ -370,7 +519,7 @@ export const Register = () => {
                     }}
                 >
                     <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
-                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>NAME:</label>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>Name:</label>
                         <input
                             type="text"
                             value={name}
@@ -389,7 +538,7 @@ export const Register = () => {
                         />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
-                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>GENDER:</label>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>Gender:</label>
                         <select
                             value={gender}
                             onChange={e => setGender(e.target.value)}
@@ -409,7 +558,7 @@ export const Register = () => {
                         </select>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
-                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>DOB:</label>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>Date of birth:</label>
                         <input
                             type="date"
                             value={dob}
@@ -426,7 +575,7 @@ export const Register = () => {
                         />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
-                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>HEIGHT:</label>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>Height:</label>
                         <input
                             type="text"
                             inputMode="decimal"
@@ -443,7 +592,7 @@ export const Register = () => {
                         />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: '14px' }}>
-                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>WEIGHT:</label>
+                        <label style={{ textAlign: 'right', fontWeight: 700, color: registerPalette.label }}>Weight:</label>
                         <input
                             type="text"
                             inputMode="decimal"
@@ -479,7 +628,7 @@ export const Register = () => {
                             cursor: 'pointer',
                         }}
                     >
-                        QABOOL HAI
+                        Qabool hai
                     </button>
                 </form>
 
@@ -559,7 +708,15 @@ export const RegisterCredentials2FA = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: 'transparent', padding: '40px 20px', boxSizing: 'border-box' }}>
+        <div
+            style={{
+                minHeight: '100vh',
+                background: 'transparent',
+                padding: '40px 20px',
+                boxSizing: 'border-box',
+                fontFamily: AUTH_UI_FONT,
+            }}
+        >
             <div style={{ maxWidth: '620px', margin: '0 auto', background: '#fffdfd', border: '1px solid #f1e6eb', borderRadius: '14px', padding: '24px' }}>
                 <div style={{ marginBottom: '12px' }}>
                     <button
@@ -578,7 +735,7 @@ export const RegisterCredentials2FA = () => {
                         ← Back
                     </button>
                 </div>
-                <h2 style={{ textAlign: 'center', marginTop: 0 }}>Register - Step 2 (Credentials + 2FA)</h2>
+                <h2 style={{ textAlign: 'center', marginTop: 0 }}>Register — step 2 (credentials + 2fa)</h2>
 
                 {!otpSent ? (
                     <form onSubmit={submitCredentials} style={{ display: 'grid', gap: '12px' }}>

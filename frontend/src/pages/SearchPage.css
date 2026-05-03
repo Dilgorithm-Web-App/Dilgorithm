@@ -1,5 +1,10 @@
 /* SEARCH PAGE (sp- prefix) */
-.sp-wrap { max-width: 900px; }
+.sp-wrap {
+  width: 100%;
+  max-width: 900px;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
 .sp-banner { margin: 0 0 16px; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1; }
 .sp-banner--warn { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
 .sp-searchbar { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 30px; padding: 14px 24px; box-shadow: 0 2px 12px rgba(0,0,0,.05); border: 1px solid #eee; margin-bottom: 24px; }

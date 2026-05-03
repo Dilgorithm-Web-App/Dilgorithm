@@ -6,6 +6,7 @@
     flex-direction: column;
     background: var(--app-page-gradient);
     background-attachment: fixed;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
 
 .auth-hero {
@@ -54,7 +55,7 @@
 
 /* 2. Log In Header - Smaller & Clean */
 .auth-header {
-    font-family: 'Comfortaa', sans-serif;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
     color: #333;
     font-size: 1.35rem;
     font-weight: 700;
@@ -69,7 +70,7 @@
 }
 
 .auth-input {
-    font-family: 'Inter', 'Poppins', sans-serif;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
     padding: 12px 20px;
     border: 1px solid #ece6ea;
     border-radius: 25px;
@@ -110,7 +111,7 @@
     padding: 14px;
     border-radius: 30px;
     font-size: 1.1rem;
-    font-family: 'Inter', 'Poppins', sans-serif;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 4px 15px rgba(183, 66, 71, 0.2);
@@ -139,7 +140,7 @@
     align-items: center;
     margin: 20px 0;
     color: #888;
-    font-family: 'Inter', 'Poppins', sans-serif;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
 .divider::before, .divider::after {
