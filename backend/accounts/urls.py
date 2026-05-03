@@ -17,6 +17,7 @@ from .views import (
     AvailableInterestsView,
     AvailableFiltersView,
     FamilyConnectionView,
+    FamilyMemberView,
 )
 
 urlpatterns = [
@@ -37,4 +38,5 @@ urlpatterns = [
     path('interests/available/', AvailableInterestsView.as_view(), name='available_interests'),
     path('filters/', AvailableFiltersView.as_view(), name='available_filters'),
     path('family/', FamilyConnectionView.as_view(), name='family_connections'),
+    path('family-members/', FamilyMemberView.as_view(), name='family_members'),
 ]

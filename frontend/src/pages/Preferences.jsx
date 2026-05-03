@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
+import { FamilyForm } from '../components/FamilyForm';
 
 export const Preferences = () => {
     const [interests, setInterests] = useState('');
@@ -98,6 +99,8 @@ export const Preferences = () => {
                     Cancel & Return to Feed
                 </button>
             </form>
+            
+            <FamilyForm />
         </div>
     );
 };

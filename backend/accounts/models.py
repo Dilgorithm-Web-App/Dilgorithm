@@ -71,3 +71,12 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"{self.sender.email} -> {self.recipient.email}"
+
+class FamilyMember(models.Model):
+    profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='family_members')
+    relationship = models.CharField(max_length=50) # e.g., Father, Mother, Sibling
+    occupation = models.CharField(max_length=100, blank=True, null=True)
+    education = models.CharField(max_length=100, blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.relationship} of {self.profile.user.email}"

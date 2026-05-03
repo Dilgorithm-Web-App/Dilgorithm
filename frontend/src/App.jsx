@@ -2,6 +2,22 @@ import React, { useState } from 'react';
 import logoHeart from './assets/logo-heart.jpg';
 import logoText from './assets/logo-text.png';
 import EngagementView from './EngagementView'; // Adjust the path if you put it in a folder
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Login, Register, RegisterCredentials2FA } from './pages/AuthPages';
+import { Feed } from './pages/Feed';
+import { Preferences } from './pages/Preferences';
+import { AuthContext } from './AuthContext';
+import { useContext } from 'react';
+import { Chat } from './pages/Chat';
+import { ChatListPage } from './pages/ChatListPage';
+import { HomePage } from './pages/HomePage';
+import { SearchPage } from './pages/SearchPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { AboutUsPage } from './pages/AboutUsPage';
+import { AppConfigurationPage } from './pages/AppConfigurationPage';
+import { EngagementModerationPage } from './pages/EngagementModerationPage';
+import { DashboardLayout } from './components/DashboardLayout';
+import { OnboardingPage } from './pages/OnboardingPage';
 
 
 // 1. SINGLETON / ITERATOR PATTERN (Config)
@@ -111,22 +127,7 @@ const ViewFactory = ({ activeTab, showAbout, setShowAbout, setActiveTab }) => {
     case 'Logout': return <LogoutView onCancel={() => setActiveTab('Account & Profile')} />;
     default: return <AccountView />;
   }
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { Login, Register, RegisterCredentials2FA } from './pages/AuthPages';
-import { Feed } from './pages/Feed';
-import { Preferences } from './pages/Preferences';
-import { AuthContext } from './AuthContext';
-import { useContext } from 'react';
-import { Chat } from './pages/Chat';
-import { ChatListPage } from './pages/ChatListPage';
-import { HomePage } from './pages/HomePage';
-import { SearchPage } from './pages/SearchPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { AboutUsPage } from './pages/AboutUsPage';
-import { AppConfigurationPage } from './pages/AppConfigurationPage';
-import { EngagementModerationPage } from './pages/EngagementModerationPage';
-import { DashboardLayout } from './components/DashboardLayout';
-import { OnboardingPage } from './pages/OnboardingPage';
+};
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);

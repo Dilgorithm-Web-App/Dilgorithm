@@ -15,7 +15,7 @@ import json
 import random
 import urllib.parse
 import urllib.request
-from .models import CustomUser, Interest, UserProfile, FamilyConnection, Report, ChatMessage
+from .models import CustomUser, Interest, UserProfile, FamilyConnection, Report, ChatMessage, FamilyMember
 from .serializers import (
     RegisterSerializer,
     MatchFeedSerializer,
@@ -24,6 +24,7 @@ from .serializers import (
     ChatMessageSerializer,
     ChatContactSerializer,
     FamilyConnectionSerializer,
+    FamilyMemberSerializer,
 )
 from .ai_engine import get_ranked_matches
 
@@ -515,3 +516,18 @@ class ToggleFavoriteView(APIView):
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class FamilyMemberView(generics.ListCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FamilyMemberSerializer
+
+    def get_queryset(self):
+        # Return family members for the currently authenticated user's profile
+        if hasattr(self.request.user, 'profile'):
+            return self.request.user.profile.family_members.all()
+        return FamilyMember.objects.none()
+
+    def perform_create(self, serializer):
+        # Create a profile if it somehow doesn't exist
+        profile, _ = UserProfile.objects.get_or_create(user=self.request.user)
+        serializer.save(profile=profile)

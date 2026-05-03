@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Q
-from .models import CustomUser, Interest, UserProfile, FamilyConnection
+from .models import CustomUser, Interest, UserProfile, FamilyConnection, FamilyMember
 from .models import ChatMessage
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -102,3 +102,8 @@ class FamilyConnectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = FamilyConnection
         fields = ('id', 'linkedMember', 'linkedMemberEmail', 'linkedMemberName', 'memberRole', 'permissions')
+
+class FamilyMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FamilyMember
+        fields = ('id', 'relationship', 'occupation', 'education')
