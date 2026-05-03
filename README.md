@@ -64,6 +64,11 @@ The sections below **add to** the description above and reflect the current code
 *   **Engagement & moderation** summary, **app configuration** (language, permissions on profile), **Settings**, **About Us**, **Preferences**; shared **dashboard layout** (sidebar + header).
 *   **Multi-step onboarding** (profession, education, location, marital status, sect, time spans, top 3 interests) with documented **GoF-style patterns** (see **Design patterns** below).
 *   **Figma-export HTML slides** under `frontend/public/figma-import/` (and `frontend/figma-import/`) where used.
+*   Enterprise-Grade Search Engine: Transitioned from client-side filtering to a full-backend search engine. Supports multi-criteria filtering (Sect, Caste, Location, Education) with optimized PageNumberPagination.
+*    Privacy-Aware Discovery: Search results and match feeds automatically respect user privacy, excluding blocked users and the requester’s own profile via a dedicated ProfileSearchQuery service.
+*   Robust Registration Validation: Implemented strict data integrity layers including Age Gating (18+), string-only name validation, and flexible profile metrics (optional height/weight).
+*   High-Fidelity Onboarding: A multi-step visual interface captured from Figma prototypes for gathering intent-based data like "Time span for marriage" and "Top 3 Interests."
+*   Advanced WebSocket Security: Integrated real-time "Blocking Guards" within Django Channels that instantly sever connections if a user is blocked during an active session.
 
 ### Tech stack (current detail)
 
@@ -75,6 +80,13 @@ In addition to the stack listed earlier, the repo now also uses:
 | **Backend** | Django 6, DRF, SimpleJWT, django-cors-headers, Channels / Daphne, Google Auth libs |
 | **Database** | `settings.py` may be configured for **Microsoft SQL Server** (`mssql-django`, ODBC); adjust `DATABASES` for your environment |
 
+
+###  Security & Validation Logic
+*   Identity Guard: Regex-based validation to ensure names contain only alphabetic characters and only 18+users can register.
+*   Socket Integrity: Dynamic token refresh logic ensures WebSocket connections don't drop due to expired JWTs.
+*   Access Control: Global middleware ensures users without a profile photo are redirected to the upload step before accessing the dashboard.
+
+*   
 ### Repository layout (high level)
 
 ```
