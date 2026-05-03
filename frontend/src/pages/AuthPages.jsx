@@ -4,8 +4,10 @@ import api from '../api';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import ReCAPTCHA from 'react-google-recaptcha';
-import parchmentBg from '../assets/parchment_bg.png';
 import dgHeartLogo from '../assets/dg_heart_logo.png';
+
+/** Served from `public/parchment_bg.png` so the URL is stable across machines and builds (avoids bundler-only asset issues). */
+const PARCHMENT_BG_URL = `${import.meta.env.BASE_URL}parchment_bg.png`;
 
 export const Login = () => {
     const [email, setEmail] = useState('');
@@ -52,7 +54,7 @@ export const Login = () => {
                 minHeight: '200vh',
                 overflowY: 'auto',
                 width: '100%',
-                backgroundImage: `url(${parchmentBg})`,
+                backgroundImage: `url(${PARCHMENT_BG_URL})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundAttachment: 'fixed',
