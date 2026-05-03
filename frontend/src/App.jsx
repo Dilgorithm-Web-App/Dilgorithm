@@ -18,6 +18,7 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { ProfileViewPage } from './pages/ProfileViewPage';
 import { EditProfilePage } from './pages/EditProfilePage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { AdminDashboard } from './pages/AdminDashboard';
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);
@@ -54,6 +55,7 @@ function App() {
             <Route path="/about-us" element={<DashboardRoute><AboutUsPage /></DashboardRoute>} />
             <Route path="/chat-list" element={<DashboardRoute><ChatListPage /></DashboardRoute>} />
             <Route path="/chat/:roomName" element={<DashboardRoute><Chat /></DashboardRoute>} />
+            <Route path="/admin" element={<DashboardRoute><AdminDashboard /></DashboardRoute>} />
             <Route path="/onboarding" element={<OnboardingPage />} />
         </Routes>
     );

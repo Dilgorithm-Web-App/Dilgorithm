@@ -1,6 +1,6 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -40,6 +40,8 @@ from .serializers import (
     ReportSerializer,
     BlockedUserSerializer,
     FamilyMemberSerializer,
+    AdminReportSerializer,
+    AdminBlockedUserSerializer,
 )
 from .ai_engine import get_ranked_matches
 from .match_storage import replace_match_recommendations
@@ -454,6 +456,12 @@ class ProfileView(generics.RetrieveUpdateAPIView):
             defaults={'fullName': default_name}
         )
         return obj
+
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to inject is_staff flag for frontend admin link."""
+        response = super().retrieve(request, *args, **kwargs)
+        response.data['is_staff'] = request.user.is_staff or request.user.is_superuser
+        return response
 
 
 class UserDetailView(APIView):
@@ -1007,3 +1015,116 @@ class FamilyMemberView(generics.ListCreateAPIView):
         # Create a profile if it somehow doesn't exist
         profile, _ = UserProfile.objects.get_or_create(user=self.request.user)
         serializer.save(profile=profile)
+
+
+# ---------------------------------------------------------------------------
+# Admin Moderation Dashboard
+# ---------------------------------------------------------------------------
+class AdminPendingReportsView(generics.ListAPIView):
+    """List all pending reports for admin review (is_staff / is_superuser only)."""
+    permission_classes = (IsAdminUser,)
+    serializer_class = AdminReportSerializer
+
+    def get_queryset(self):
+        return (
+            Report.objects.filter(verdict='Pending')
+            .select_related('reporter', 'reporter__profile', 'reportedUser', 'reportedUser__profile')
+            .order_by('-createdAt')
+        )
+
+
+class AdminBlockListView(generics.ListAPIView):
+    """List all blocked-user entries system-wide (is_staff / is_superuser only)."""
+    permission_classes = (IsAdminUser,)
+    serializer_class = AdminBlockedUserSerializer
+
+    def get_queryset(self):
+        return (
+            BlockedUser.objects.all()
+            .select_related('blocker', 'blocker__profile', 'blocked', 'blocked__profile')
+            .order_by('-createdAt')
+        )
+
+
+class AdminResolveReportView(APIView):
+    """
+    Resolve a specific report: approve (block the reported user) or dismiss.
+
+    POST /api/accounts/admin/reports/<id>/resolve/
+    Body: { "action": "approve" | "dismiss" }
+
+    Reuses existing block logic (BlockedUser.objects.create) and patterns
+    (event_bus Observer, ViewResponseFactory Factory).
+    """
+    permission_classes = (IsAdminUser,)
+
+    def post(self, request, report_id, *args, **kwargs):
+        from django.utils import timezone
+
+        action = (request.data.get('action') or '').strip().lower()
+        if action not in ('approve', 'dismiss'):
+            return ViewResponseFactory.error("action must be 'approve' or 'dismiss'.")
+
+        try:
+            report = Report.objects.select_related(
+                'reporter', 'reportedUser'
+            ).get(id=report_id)
+        except Report.DoesNotExist:
+            return ViewResponseFactory.not_found("Report not found.")
+
+        if report.verdict != 'Pending':
+            return ViewResponseFactory.error(
+                f"Report already resolved with verdict '{report.verdict}'."
+            )
+
+        if action == 'approve':
+            # Block the reported user (blocker = reporter, same as user-initiated block)
+            blocked_pair = BlockedUser.objects.filter(
+                blocker=report.reporter, blocked=report.reportedUser
+            ).first()
+            if not blocked_pair:
+                BlockedUser.objects.create(
+                    blocker=report.reporter,
+                    blocked=report.reportedUser,
+                )
+                # Observer pattern — publish block event
+                event_bus.publish("user.blocked", {
+                    "blocker_email": report.reporter.email,
+                    "blocked_email": report.reportedUser.email,
+                    "is_blocked": True,
+                    "admin_action": True,
+                })
+
+            report.verdict = 'Approved'
+            report.resolvedAt = timezone.now()
+            report.resolvedBy = request.user
+            report.save(update_fields=['verdict', 'resolvedAt', 'resolvedBy'])
+
+            # Observer pattern — publish report resolution event
+            event_bus.publish("report.resolved", {
+                "report_id": report.id,
+                "action": "approve",
+                "admin_email": request.user.email,
+            })
+
+            return ViewResponseFactory.success(
+                "Report approved — user has been blocked.",
+                {"verdict": report.verdict},
+            )
+
+        else:  # dismiss
+            report.verdict = 'Dismissed'
+            report.resolvedAt = timezone.now()
+            report.resolvedBy = request.user
+            report.save(update_fields=['verdict', 'resolvedAt', 'resolvedBy'])
+
+            event_bus.publish("report.resolved", {
+                "report_id": report.id,
+                "action": "dismiss",
+                "admin_email": request.user.email,
+            })
+
+            return ViewResponseFactory.success(
+                "Report dismissed — no action taken.",
+                {"verdict": report.verdict},
+            )

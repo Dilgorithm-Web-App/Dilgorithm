@@ -114,6 +114,8 @@ class Report(models.Model):
     reason = models.TextField()
     verdict = models.CharField(max_length=50, default='Pending')
     createdAt = models.DateTimeField(auto_now_add=True)
+    resolvedAt = models.DateTimeField(null=True, blank=True)
+    resolvedBy = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='reports_resolved')
 
     def __str__(self):
         return f"Report by {self.reporter.email} against {self.reportedUser.email}"

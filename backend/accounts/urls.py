@@ -28,6 +28,9 @@ from .views import (
     PasswordResetRequestView,
     PasswordResetVerifyView,
     FamilyMemberView,
+    AdminPendingReportsView,
+    AdminBlockListView,
+    AdminResolveReportView,
 )
 from .profile_search_views import SearchProfilesView
 
@@ -61,4 +64,9 @@ urlpatterns = [
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset/verify/', PasswordResetVerifyView.as_view(), name='password_reset_verify'),
     path('family-members/', FamilyMemberView.as_view(), name='family_members'),
+    # Admin moderation dashboard
+    path('admin/reports/', AdminPendingReportsView.as_view(), name='admin_pending_reports'),
+    path('admin/blocklist/', AdminBlockListView.as_view(), name='admin_block_list'),
+    path('admin/reports/<int:report_id>/resolve/', AdminResolveReportView.as_view(), name='admin_resolve_report'),
 ]
+
