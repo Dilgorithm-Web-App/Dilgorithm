@@ -1,5 +1,11 @@
 /* SETTINGS PAGE (st- prefix) */
-.st-wrap { max-width: 400px; padding: 20px 0; }
+.st-wrap {
+  width: 100%;
+  max-width: 400px;
+  margin-inline: auto;
+  padding: 20px 0;
+  box-sizing: border-box;
+}
 
 .st-card {
   background: #fff;

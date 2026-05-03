@@ -100,14 +100,21 @@ class RegisterView(generics.CreateAPIView):
 
 
 def verify_recaptcha(captcha_token):
-    if not settings.RECAPTCHA_SECRET_KEY:
+    """
+    In DEBUG, if RECAPTCHA_SECRET_KEY is not set, skip verification so local dev works
+    without Google reCAPTCHA keys. Production must set the secret and use real tokens.
+    """
+    secret = (getattr(settings, "RECAPTCHA_SECRET_KEY", None) or "").strip()
+    if settings.DEBUG and not secret:
+        return True, None
+    if not secret:
         return False, "Missing RECAPTCHA_SECRET_KEY in backend environment."
     if not captcha_token:
         return False, "CAPTCHA token is required."
 
     payload = urllib.parse.urlencode(
         {
-            "secret": settings.RECAPTCHA_SECRET_KEY,
+            "secret": secret,
             "response": captcha_token,
         }
     ).encode("utf-8")
@@ -1048,22 +1055,21 @@ class AdminBlockListView(generics.ListAPIView):
 
 class AdminResolveReportView(APIView):
     """
-    Resolve a specific report: approve (block the reported user) or dismiss.
+    Resolve a pending report: platform ban, warn (no ban), or dismiss.
 
     POST /api/accounts/admin/reports/<id>/resolve/
-    Body: { "action": "approve" | "dismiss" }
-
-    Reuses existing block logic (BlockedUser.objects.create) and patterns
-    (event_bus Observer, ViewResponseFactory Factory).
+    Body: { "action": "ban" | "warn" | "dismiss" }
     """
     permission_classes = (IsAdminUser,)
 
     def post(self, request, report_id, *args, **kwargs):
         from django.utils import timezone
 
+        from .patterns import AccountStateMachine, InvalidTransitionError
+
         action = (request.data.get('action') or '').strip().lower()
-        if action not in ('approve', 'dismiss'):
-            return ViewResponseFactory.error("action must be 'approve' or 'dismiss'.")
+        if action not in ('ban', 'warn', 'dismiss'):
+            return ViewResponseFactory.error("action must be 'ban', 'warn', or 'dismiss'.")
 
         try:
             report = Report.objects.select_related(
@@ -1077,54 +1083,72 @@ class AdminResolveReportView(APIView):
                 f"Report already resolved with verdict '{report.verdict}'."
             )
 
-        if action == 'approve':
-            # Block the reported user (blocker = reporter, same as user-initiated block)
-            blocked_pair = BlockedUser.objects.filter(
-                blocker=report.reporter, blocked=report.reportedUser
-            ).first()
-            if not blocked_pair:
-                BlockedUser.objects.create(
-                    blocker=report.reporter,
-                    blocked=report.reportedUser,
-                )
-                # Observer pattern — publish block event
-                event_bus.publish("user.blocked", {
-                    "blocker_email": report.reporter.email,
-                    "blocked_email": report.reportedUser.email,
-                    "is_blocked": True,
-                    "admin_action": True,
-                })
+        target = report.reportedUser
+        now = timezone.now()
 
-            report.verdict = 'Approved'
-            report.resolvedAt = timezone.now()
-            report.resolvedBy = request.user
-            report.save(update_fields=['verdict', 'resolvedAt', 'resolvedBy'])
+        if action == 'ban':
+            if target.id == request.user.id:
+                return ViewResponseFactory.error("You cannot ban your own account.")
+            if target.is_superuser or target.is_staff:
+                return ViewResponseFactory.error("Cannot ban staff accounts.")
 
-            # Observer pattern — publish report resolution event
-            event_bus.publish("report.resolved", {
-                "report_id": report.id,
-                "action": "approve",
-                "admin_email": request.user.email,
-            })
+            if target.accountStatus != 'Banned':
+                try:
+                    AccountStateMachine(target).ban()
+                except InvalidTransitionError:
+                    target.accountStatus = 'Banned'
+                    target.save(update_fields=['accountStatus'])
+            if target.is_active:
+                target.is_active = False
+                target.save(update_fields=['is_active'])
 
-            return ViewResponseFactory.success(
-                "Report approved — user has been blocked.",
-                {"verdict": report.verdict},
-            )
-
-        else:  # dismiss
-            report.verdict = 'Dismissed'
-            report.resolvedAt = timezone.now()
+            report.verdict = 'Banned'
+            report.resolvedAt = now
             report.resolvedBy = request.user
             report.save(update_fields=['verdict', 'resolvedAt', 'resolvedBy'])
 
             event_bus.publish("report.resolved", {
                 "report_id": report.id,
-                "action": "dismiss",
+                "action": "ban",
+                "admin_email": request.user.email,
+                "banned_email": target.email,
+            })
+
+            return ViewResponseFactory.success(
+                "User has been banned and can no longer sign in.",
+                {"verdict": report.verdict},
+            )
+
+        if action == 'warn':
+            report.verdict = 'Warned'
+            report.resolvedAt = now
+            report.resolvedBy = request.user
+            report.save(update_fields=['verdict', 'resolvedAt', 'resolvedBy'])
+
+            event_bus.publish("report.resolved", {
+                "report_id": report.id,
+                "action": "warn",
                 "admin_email": request.user.email,
             })
 
             return ViewResponseFactory.success(
-                "Report dismissed — no action taken.",
+                "Report resolved — user has been warned (no ban applied).",
                 {"verdict": report.verdict},
             )
+
+        # dismiss
+        report.verdict = 'Dismissed'
+        report.resolvedAt = now
+        report.resolvedBy = request.user
+        report.save(update_fields=['verdict', 'resolvedAt', 'resolvedBy'])
+
+        event_bus.publish("report.resolved", {
+            "report_id": report.id,
+            "action": "dismiss",
+            "admin_email": request.user.email,
+        })
+
+        return ViewResponseFactory.success(
+            "Report dismissed — no action taken.",
+            {"verdict": report.verdict},
+        )

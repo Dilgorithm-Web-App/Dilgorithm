@@ -1,5 +1,10 @@
 /* AI RANKING / FEED PAGE (fd- prefix) */
-.fd-wrap { max-width: 920px; }
+.fd-wrap {
+  width: 100%;
+  max-width: 920px;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
 .fd-main-title { text-align: center; font-size: 26px; font-weight: 800; color: #8B1A1A; margin: 0 0 6px; }
 .fd-subtitle { text-align: center; font-size: 14px; color: #888; margin: 0 0 28px; }
 

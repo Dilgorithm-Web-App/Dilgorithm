@@ -11,6 +11,7 @@ import { adaptChatContact } from '../patterns/ApiResponseAdapter';
 import { PageState } from '../patterns/PageState';
 import { eventBus } from '../patterns/EventBus';
 import { notificationService } from '../patterns/NotificationService';
+import { formatApiError } from '../utils/formatApiError';
 
 function parseRoom(name) {
     if (!name || typeof name !== 'string') {
@@ -251,12 +252,15 @@ export const Chat = () => {
         setReportBusy(true);
         setReportErr('');
         try {
-            await api.post('accounts/report/', { reported_user_id: contactId, reason });
+            await api.post('accounts/report/', {
+                reported_user_id: Number(contactId),
+                reason,
+            });
             notificationService.show('Report submitted. Thank you.', 'success');
             setReportOpen(false);
             setReportReason('');
         } catch (err) {
-            setReportErr(err.response?.data?.detail || 'Could not submit report.');
+            setReportErr(formatApiError(err, 'Could not submit report.'));
         }
         setReportBusy(false);
     };

@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useContext } from 'react';
-import { Login, Register, RegisterCredentials2FA } from './pages/AuthPages';
+import { Login, Register, RegisterCredentials2FA, AdminLogin } from './pages/AuthPages';
 import { RegisterPhotoPage } from './pages/RegisterPhotoPage';
 import { Feed } from './pages/Feed';
 import { Preferences } from './pages/Preferences';
@@ -37,6 +37,7 @@ function App() {
         <Routes>
             <Route path="/" element={<Navigate to="/login" />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/login/admin" element={<AdminLogin />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/register" element={<Register />} />
             <Route path="/register/credentials" element={<RegisterCredentials2FA />} />
