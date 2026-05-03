@@ -18,7 +18,7 @@ Thumbs.db
 # =========================
 backend/venv/
 backend/.venv/
-# venv mistakenly created inside the Django package folder (never commit)
+# Never commit a venv under backend/backend/ (wrong location; use backend/venv locally)
 backend/backend/venv/
 backend/env/
 backend/__pycache__/
