@@ -26,6 +26,7 @@ from .views import (
     PasswordResetVerifyView,
     FamilyMemberView,
 )
+from .profile_search_views import SearchProfilesView
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='auth_register'),
@@ -46,6 +47,7 @@ urlpatterns = [
     path('chat/messages/<int:contact_id>/', ChatMessagesView.as_view(), name='chat_messages'),
     path('interests/available/', AvailableInterestsView.as_view(), name='available_interests'),
     path('filters/', AvailableFiltersView.as_view(), name='available_filters'),
+    path('search/', SearchProfilesView.as_view(), name='profile_search'),
     path('family/', FamilyConnectionView.as_view(), name='family_connections'),
     path('report/', ReportUserView.as_view(), name='report_user'),
     path('block/', BlockUserView.as_view(), name='block_user'),

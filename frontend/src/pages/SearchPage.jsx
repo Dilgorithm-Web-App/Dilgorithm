@@ -1,13 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { createFavoritesSetFromFeedRows } from '../features/favorites/favoriteIdsFromFeed';
 import { useCatalogMetadata } from '../hooks/useCatalogMetadata';
 import { OptionIterator } from '../catalog/OptionIterator';
+import { buildProfileSearchParams } from '../features/search/profileSearchParamsFactory';
 import './SearchPage.css';
 
 import { adaptFeedProfile } from '../patterns/ApiResponseAdapter';
-import { buildSearchFilters } from '../patterns/FilterComposite';
 import { MatchIterator } from '../patterns/MatchIterator';
 import { eventBus } from '../patterns/EventBus';
 import { ProfileCardTemplate } from '../patterns/ProfileCardTemplate';
@@ -28,13 +27,20 @@ function selectOptionsFromIterator(items) {
     return nodes;
 }
 
+const PAGE_SIZE = 20;
+
 export const SearchPage = () => {
     const [query, setQuery] = useState('');
     const [profiles, setProfiles] = useState([]);
-    const [filtered, setFiltered] = useState([]);
     const [filterState, setFilterState] = useState({ location: '', sect: '', caste: '', education: '' });
     const [favorites, setFavorites] = useState(new Set());
     const [loadError, setLoadError] = useState('');
+    const [resultsLoading, setResultsLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(null);
+    const [hasNext, setHasNext] = useState(false);
+    const [hasPrevious, setHasPrevious] = useState(false);
+
     const navigate = useNavigate();
 
     const { data: catalogData, loading: catalogLoading, error: catalogError } = useCatalogMetadata();
@@ -50,24 +56,60 @@ export const SearchPage = () => {
         [catalogFilters],
     );
 
-    useEffect(() => {
-        const fetchData = async () => {
+    const handleSearch = useCallback(
+        async (pageNum = 1) => {
             setLoadError('');
+            setResultsLoading(true);
+            setPage(pageNum);
+
             if (!localStorage.getItem('access_token')) {
                 setLoadError('You need to be logged in to search.');
+                setResultsLoading(false);
+                setProfiles([]);
+                setTotalCount(0);
+                setHasNext(false);
+                setHasPrevious(false);
                 return;
             }
+
             try {
-                const res = await api.get('accounts/search/users/', { params: { limit: 500 } });
-                const raw = res.data;
-                const data = Array.isArray(raw) ? raw : Array.isArray(raw?.results) ? raw.results : [];
-                if (!Array.isArray(raw) && !Array.isArray(raw?.results)) {
-                    console.warn('Unexpected search API shape', raw);
+                const params = buildProfileSearchParams({
+                    nameQuery: query,
+                    filterState,
+                    page: pageNum,
+                    pageSize: PAGE_SIZE,
+                });
+                const res = await api.get('accounts/search/', { params });
+                const body = res.data;
+                let rows = [];
+                if (body && Array.isArray(body.results)) {
+                    rows = body.results;
+                    setTotalCount(typeof body.count === 'number' ? body.count : rows.length);
+                    setHasNext(Boolean(body.next));
+                    setHasPrevious(Boolean(body.previous));
+                } else if (Array.isArray(body)) {
+                    rows = body;
+                    setTotalCount(rows.length);
+                    setHasNext(false);
+                    setHasPrevious(false);
+                } else {
+                    setTotalCount(0);
+                    setHasNext(false);
+                    setHasPrevious(false);
                 }
-                setFavorites(createFavoritesSetFromFeedRows(data));
-                const adapted = data.map(adaptFeedProfile);
+
+                const adapted = rows.map(adaptFeedProfile);
                 setProfiles(adapted);
-                setFiltered(adapted);
+                setFavorites((prev) => {
+                    const next = new Set(prev);
+                    for (const r of rows) {
+                        const id = Number(r.id);
+                        if (Number.isNaN(id)) continue;
+                        if (r.is_favorite) next.add(id);
+                        else next.delete(id);
+                    }
+                    return next;
+                });
             } catch (e) {
                 console.error(e);
                 const status = e.response?.status;
@@ -75,7 +117,7 @@ export const SearchPage = () => {
                 if (status === 401 || status === 403) {
                     setLoadError('Session expired or not allowed. Log in again and retry.');
                 } else if (status === 404) {
-                    setLoadError('Search API not found. Restart the backend and confirm it includes search/users/.');
+                    setLoadError('Search API not found. Restart the backend and confirm it includes accounts/search/.');
                 } else {
                     setLoadError(
                         typeof detail === 'string'
@@ -83,15 +125,21 @@ export const SearchPage = () => {
                             : 'Could not load profiles. Check that the backend is running and you are logged in.',
                     );
                 }
+                setProfiles([]);
+                setTotalCount(0);
+                setHasNext(false);
+                setHasPrevious(false);
+            } finally {
+                setResultsLoading(false);
             }
-        };
-        fetchData();
-    }, []);
+        },
+        [query, filterState],
+    );
 
     useEffect(() => {
-        const filterTree = buildSearchFilters(filterState, query);
-        setFiltered(filterTree.apply(profiles));
-    }, [query, filterState, profiles]);
+        handleSearch(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const toggleFavorite = async (id) => {
         const targetId = Number(id);
@@ -110,8 +158,11 @@ export const SearchPage = () => {
         }
     };
 
-    const matchIterator = new MatchIterator(filtered);
+    const matchIterator = new MatchIterator(profiles);
     const displayList = matchIterator.toArray();
+
+    const totalPages =
+        totalCount != null && PAGE_SIZE > 0 ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : null;
 
     const renderBadge = (p) =>
         p.compatibilityScore ? (
@@ -129,6 +180,11 @@ export const SearchPage = () => {
             </button>
         </>
     );
+
+    const onApplyFilters = () => {
+        handleSearch(1);
+        window.scrollTo({ top: 400, behavior: 'smooth' });
+    };
 
     return (
         <div className="sp-wrap">
@@ -151,6 +207,12 @@ export const SearchPage = () => {
                     placeholder="Search by name, email, username, or user id…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSearch(1);
+                        }
+                    }}
                 />
             </div>
 
@@ -192,7 +254,7 @@ export const SearchPage = () => {
                         value={filterState.location}
                         onChange={(e) => setFilterState({ ...filterState, location: e.target.value })}
                     >
-                        <option value="">Select location</option>
+                        <option value="">Any location</option>
                         {selectOptionsFromIterator(filterLists.locations)}
                     </select>
                 </div>
@@ -203,7 +265,7 @@ export const SearchPage = () => {
                         value={filterState.sect}
                         onChange={(e) => setFilterState({ ...filterState, sect: e.target.value })}
                     >
-                        <option value="">Select sect</option>
+                        <option value="">Any sect</option>
                         {selectOptionsFromIterator(filterLists.sects)}
                     </select>
                 </div>
@@ -214,7 +276,7 @@ export const SearchPage = () => {
                         value={filterState.caste}
                         onChange={(e) => setFilterState({ ...filterState, caste: e.target.value })}
                     >
-                        <option value="">Select caste</option>
+                        <option value="">Any caste</option>
                         {selectOptionsFromIterator(filterLists.castes)}
                     </select>
                 </div>
@@ -225,40 +287,75 @@ export const SearchPage = () => {
                         value={filterState.education}
                         onChange={(e) => setFilterState({ ...filterState, education: e.target.value })}
                     >
-                        <option value="">Select education level</option>
+                        <option value="">Any education</option>
                         {selectOptionsFromIterator(filterLists.education)}
                     </select>
                 </div>
 
-                <button
-                    type="button"
-                    className="sp-apply-btn"
-                    onClick={() => window.scrollTo({ top: 400, behavior: 'smooth' })}
-                >
-                    Apply Filters
+                <button type="button" className="sp-apply-btn" onClick={onApplyFilters} disabled={resultsLoading}>
+                    {resultsLoading ? 'Searching…' : 'Search / apply filters'}
                 </button>
             </div>
 
             <h3 className="sp-browse-title">Browse Profiles</h3>
-            {displayList.length === 0 ? (
+
+            {resultsLoading ? (
+                <div className="sp-loading" role="status" aria-busy="true" aria-live="polite">
+                    <div className="sp-spinner" />
+                    <p className="sp-loading-text">Searching profiles…</p>
+                </div>
+            ) : displayList.length === 0 ? (
                 <div className="sp-empty">
                     <span style={{ fontSize: 40 }}>🔍</span>
-                    <p>No profiles found. Try different filters.</p>
+                    <p>No users found matching your criteria.</p>
+                    <p style={{ marginTop: 8 }}>Try a different name or clear some filters.</p>
                 </div>
             ) : (
-                <div className="sp-grid">
-                    {displayList.map((p, i) => (
-                        <ProfileCardTemplate
-                            key={p.id}
-                            profile={p}
-                            index={i}
-                            className="sp-profile-card"
-                            renderMeta={renderMeta}
-                            onFavorite={toggleFavorite}
-                            isFavorite={favorites.has(Number(p.id))}
-                        />
-                    ))}
-                </div>
+                <>
+                    {totalPages != null ? (
+                        <p style={{ margin: '0 0 12px', color: '#666', fontSize: 14 }}>
+                            About {totalCount} result{totalCount === 1 ? '' : 's'}
+                            {totalPages > 1 ? ` · Page ${page} of ${totalPages}` : ''}
+                        </p>
+                    ) : null}
+                    <div className="sp-grid">
+                        {displayList.map((p, i) => (
+                            <ProfileCardTemplate
+                                key={p.id}
+                                profile={p}
+                                index={i}
+                                className="sp-profile-card"
+                                renderMeta={renderMeta}
+                                onFavorite={toggleFavorite}
+                                isFavorite={favorites.has(Number(p.id))}
+                            />
+                        ))}
+                    </div>
+                    {(hasPrevious || hasNext) && (
+                        <div className="sp-pager">
+                            <button
+                                type="button"
+                                className="sp-pager-btn"
+                                disabled={!hasPrevious || resultsLoading}
+                                onClick={() => handleSearch(page - 1)}
+                            >
+                                Previous
+                            </button>
+                            <span className="sp-pager-status">
+                                Page {page}
+                                {totalPages != null ? ` / ${totalPages}` : ''}
+                            </span>
+                            <button
+                                type="button"
+                                className="sp-pager-btn"
+                                disabled={!hasNext || resultsLoading}
+                                onClick={() => handleSearch(page + 1)}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
