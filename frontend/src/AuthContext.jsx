@@ -67,8 +67,17 @@ export const AuthProvider = ({ children }) => {
         navigate('/login');
     };
 
+    /** Used after email registration (2FA) so the next step can call authenticated APIs without a full page reload. */
+    const setSession = (access, refresh, partial = {}) => {
+        localStorage.setItem('access_token', access);
+        if (refresh) {
+            localStorage.setItem('refresh_token', refresh);
+        }
+        setUser({ token: access, ...partial });
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, loginWithGoogle, logout }}>
+        <AuthContext.Provider value={{ user, login, loginWithGoogle, logout, setSession }}>
             {children}
         </AuthContext.Provider>
     );

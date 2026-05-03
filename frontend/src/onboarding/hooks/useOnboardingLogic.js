@@ -6,6 +6,7 @@ import { userFormDataStore } from '../store/UserFormDataStore';
 import { progressSubject } from '../observer/ProgressSubject';
 import { adaptOnboardingToProfilePayload } from '../adapters/profileAdapter';
 import { defaultApiService } from '../services/ApiService';
+import { buildOnboardingFormComposite } from '../composite/FormFieldComposite';
 
 export const useOnboardingLogic = ({ apiService = defaultApiService, onComplete, initialStepKey, onStepKeyChange }) => {
     const initialIndex = getStepIndexByKey(initialStepKey);
@@ -15,6 +16,7 @@ export const useOnboardingLogic = ({ apiService = defaultApiService, onComplete,
     const [isSaving, setIsSaving] = useState(false);
 
     const iterator = useMemo(() => new StepIterator(ONBOARDING_STEPS, initialIndex), []);
+    const formComposite = useMemo(() => buildOnboardingFormComposite(ONBOARDING_STEPS), []);
     const stepIndex = flowState.value();
     const currentStep = ONBOARDING_STEPS[stepIndex];
     const currentValue = (formData[currentStep.field] ?? currentStep?.defaultValue) ?? '';
@@ -63,6 +65,9 @@ export const useOnboardingLogic = ({ apiService = defaultApiService, onComplete,
         const ok = await confirmStep();
         if (!ok) return;
         if (iterator.isLast()) {
+            if (!formComposite.validateAll(userFormDataStore.getData())) {
+                return;
+            }
             if (onComplete) onComplete();
             return;
         }

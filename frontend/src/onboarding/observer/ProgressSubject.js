@@ -1,3 +1,4 @@
+/** Observer pattern: progress listeners subscribe; subject notifies on change. */
 class ProgressSubject {
     constructor() {
         this.listeners = new Set();
