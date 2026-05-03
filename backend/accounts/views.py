@@ -15,8 +15,16 @@ import json
 import random
 import urllib.parse
 import urllib.request
-from .models import CustomUser, Interest, UserProfile, FamilyConnection, Report, ChatMessage, BlockedUser
-from .models import CustomUser, Interest, UserProfile, FamilyConnection, Report, ChatMessage, FamilyMember
+from .models import (
+    BlockedUser,
+    ChatMessage,
+    CustomUser,
+    FamilyConnection,
+    FamilyMember,
+    Interest,
+    Report,
+    UserProfile,
+)
 from .serializers import (
     RegisterSerializer,
     MatchFeedSerializer,
@@ -521,7 +529,12 @@ class ChatContactsView(generics.ListAPIView):
         blocked_ids = get_blocked_ids(user)
         contact_ids -= blocked_ids
 
-        return CustomUser.objects.filter(id__in=contact_ids).exclude(id=user.id).order_by("id")
+        return (
+            CustomUser.objects.filter(id__in=contact_ids)
+            .exclude(id=user.id)
+            .select_related('profile')
+            .order_by('id')
+        )
 
 
 class ChatMessagesView(APIView):
@@ -630,8 +643,20 @@ class AvailableFiltersView(APIView):
 
     def get(self, request, *args, **kwargs):
         filters = {
+            "locations": [
+                "Karachi",
+                "Lahore",
+                "Islamabad",
+                "Rawalpindi",
+                "Faisalabad",
+                "Multan",
+                "Peshawar",
+                "Quetta",
+                "Other",
+            ],
+            "sects": ["Sunni", "Shia", "Just Muslim", "Other"],
             "caste": ["Syed", "Sheikh", "Pathan", "Mughal", "Rajput", "Arain", "Jat", "Other"],
-            "education": ["High School", "Bachelors", "Masters", "PhD", "Other"]
+            "education": ["High School", "Bachelors", "Masters", "PhD", "Other"],
         }
         return Response(filters, status=status.HTTP_200_OK)
 

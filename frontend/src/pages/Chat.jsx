@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
-import { CHAT_AVATAR_COLORS } from '../data/chatContacts';
+import { getProfilePhotoImgSrc } from '../utils/profileImageSrc';
+import { useChatWebSocket } from '../chat/useChatWebSocket';
+import { ConnectionState } from '../chat/ws/connectionState';
 import './Chat.css';
 
 // ── Design Patterns ──
@@ -31,31 +33,45 @@ export const Chat = () => {
     // Adapter pattern — adapted contacts for uniform access
     const activeContact = useMemo(
         () => contacts.find((c) => Number(c.id) === contactId),
-        [contacts, contactId]
+        [contacts, contactId],
     );
 
-    const activeIndex = useMemo(
-        () => contacts.findIndex((c) => Number(c.id) === contactId),
-        [contacts, contactId]
-    );
-
-    const headerColor =
-        activeIndex >= 0 ? CHAT_AVATAR_COLORS[activeIndex % CHAT_AVATAR_COLORS.length] : CHAT_AVATAR_COLORS[0];
     const displayName =
-        activeContact?.displayName || activeContact?.username || activeContact?.email || (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
+        activeContact?.displayName ||
+        activeContact?.fullName ||
+        activeContact?.username ||
+        activeContact?.email ||
+        (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
     const headerStatus = activeContact?.status || 'Tap to chat';
+    const headerPhotoSrc = getProfilePhotoImgSrc(
+        activeContact?.images?.length ? activeContact.images : activeContact?.profileImage ? [activeContact.profileImage] : [],
+    );
+
+    const loadMessages = useCallback(async () => {
+        if (!contactId) return;
+        try {
+            const { data } = await api.get(`accounts/chat/messages/${contactId}/`);
+            const rows = Array.isArray(data) ? data : [];
+            setMessages(rows);
+            setError('');
+        } catch {
+            setError('Could not load chat messages.');
+        }
+    }, [contactId]);
 
     useEffect(() => {
         const loadContacts = async () => {
             try {
                 const { data } = await api.get('accounts/chat/contacts/');
                 const raw = Array.isArray(data) ? data : [];
-                // Adapter pattern — normalise chat contacts to UnifiedProfile
                 const adapted = raw.map(adaptChatContact);
-                // Preserve the raw status field from the API for chat-specific display
-                const merged = adapted.map((a, i) => ({ ...a, status: raw[i]?.status || 'Tap to chat' }));
+                const merged = adapted.map((a, i) => ({
+                    ...a,
+                    ...raw[i],
+                    status: raw[i]?.status || 'Tap to chat',
+                }));
                 setContacts(merged);
-            } catch (e) {
+            } catch {
                 setError('Could not load chat contacts.');
             }
         };
@@ -63,23 +79,25 @@ export const Chat = () => {
     }, []);
 
     useEffect(() => {
-        if (!contactId) return;
-
-        const loadMessages = async () => {
-            try {
-                const { data } = await api.get(`accounts/chat/messages/${contactId}/`);
-                const rows = Array.isArray(data) ? data : [];
-                setMessages(rows);
-                setError('');
-            } catch (e) {
-                setError('Could not load chat messages.');
-            }
-        };
-
         loadMessages();
-        const poll = setInterval(loadMessages, 2500);
-        return () => clearInterval(poll);
-    }, [contactId]);
+    }, [loadMessages]);
+
+    const onWsMessage = useCallback((row) => {
+        setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+    }, []);
+
+    const { connectionState, sendText } = useChatWebSocket({
+        roomName: roomName || '',
+        enabled: Boolean(contactId && roomName),
+        onMessage: onWsMessage,
+        onOpen: () => {
+            setError('');
+            loadMessages();
+        },
+        onError: (detail) => {
+            if (detail) setError(detail);
+        },
+    });
 
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,23 +133,27 @@ export const Chat = () => {
         const text = input.trim();
         if (!text || !contactId) return;
 
-        // State pattern — transition to sending
         setSendState(PageState.saving(null));
-
-        api.post(`accounts/chat/messages/${contactId}/`, { message: text })
-            .then(({ data }) => {
-                setMessages((prev) => [...prev, data]);
-                setInput('');
-                setError('');
-                setSendState(PageState.idle());
-                // Observer pattern — publish message sent event
-                eventBus.publish('message.sent', { contactId, message: text });
-            })
-            .catch((err) => {
-                setError(err.response?.data?.detail || 'Failed to send message.');
-                setSendState(PageState.error('Failed to send'));
-            });
+        const ok = sendText(text);
+        if (ok) {
+            setInput('');
+            setError('');
+            eventBus.publish('message.sent', { contactId, message: text });
+            setSendState(PageState.idle());
+        } else {
+            setError('Not connected. Wait for chat to reconnect, then try again.');
+            setSendState(PageState.error('Failed to send'));
+        }
     };
+
+    const wsStatus =
+        connectionState === ConnectionState.RECONNECTING
+            ? 'Reconnecting…'
+            : connectionState === ConnectionState.CONNECTING
+              ? 'Connecting…'
+              : connectionState === ConnectionState.ERROR
+                ? 'Connection error'
+                : null;
 
     return (
         <div className="ch-layout">
@@ -167,7 +189,7 @@ export const Chat = () => {
             )}
             <div className="ch-contacts">
                 <h4 className="ch-contacts-title">Messages</h4>
-                {contacts.map((c, i) => (
+                {contacts.map((c) => (
                     <div
                         key={c.id}
                         className={`ch-contact ${contactId === Number(c.id) ? 'ch-contact--active' : ''}`}
@@ -181,20 +203,17 @@ export const Chat = () => {
                             }
                         }}
                     >
-                        <div
-                            className="ch-contact-av"
-                            style={{
-                                background: c.profileImage ? 'transparent' : CHAT_AVATAR_COLORS[i % CHAT_AVATAR_COLORS.length],
-                            }}
-                        >
-                            {c.profileImage ? (
-                                <img className="ch-contact-av-img" src={c.profileImage} alt="" />
-                            ) : (
-                                (c.username || c.email || 'U')[0]?.toUpperCase()
-                            )}
+                        <div className="ch-contact-av">
+                            <img
+                                src={getProfilePhotoImgSrc(
+                                    c.images?.length ? c.images : c.profileImage ? [c.profileImage] : [],
+                                )}
+                                alt=""
+                                className="ch-contact-av-img"
+                            />
                         </div>
                         <div className="ch-contact-info">
-                            <div className="ch-contact-name">{c.username || c.email}</div>
+                            <div className="ch-contact-name">{c.displayName || c.fullName || c.username || c.email}</div>
                             <div className="ch-contact-status">{c.status}</div>
                         </div>
                     </div>
@@ -214,21 +233,13 @@ export const Chat = () => {
                                 <path d="M19 12H5M12 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <div
-                            className="ch-header-av"
-                            style={{
-                                background: activeContact?.profileImage ? 'transparent' : headerColor,
-                            }}
-                        >
-                            {activeContact?.profileImage ? (
-                                <img className="ch-header-av-img" src={activeContact.profileImage} alt="" />
-                            ) : (
-                                displayName[0]?.toUpperCase() || 'U'
-                            )}
+                        <div className="ch-header-av">
+                            <img src={headerPhotoSrc} alt="" className="ch-header-av-img" />
                         </div>
                         <div>
                             <div className="ch-header-name">{displayName}</div>
                             <div className="ch-header-status">{headerStatus}</div>
+                            {wsStatus ? <div className="ch-ws-status">{wsStatus}</div> : null}
                         </div>
                     </div>
                     <button
@@ -245,7 +256,21 @@ export const Chat = () => {
 
                 <div className="ch-messages">
                     {error ? <p className="ch-error">{error}</p> : null}
-                    {toastMsg ? <div style={{ background: '#4CAF50', color: 'white', padding: '10px', borderRadius: '4px', textAlign: 'center', marginBottom: '10px', animation: 'fadeIn 0.3s ease' }}>{toastMsg}</div> : null}
+                    {toastMsg ? (
+                        <div
+                            style={{
+                                background: '#4CAF50',
+                                color: 'white',
+                                padding: '10px',
+                                borderRadius: '4px',
+                                textAlign: 'center',
+                                marginBottom: '10px',
+                                animation: 'fadeIn 0.3s ease',
+                            }}
+                        >
+                            {toastMsg}
+                        </div>
+                    ) : null}
                     {messages.length === 0 && (
                         <div className="ch-empty">
                             <span style={{ fontSize: 36 }}>💬</span>

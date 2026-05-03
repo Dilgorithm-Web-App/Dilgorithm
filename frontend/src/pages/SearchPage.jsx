@@ -1,125 +1,216 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { createFavoritesSetFromFeedRows } from '../features/favorites/favoriteIdsFromFeed';
+import { useCatalogMetadata } from '../hooks/useCatalogMetadata';
+import { OptionIterator } from '../catalog/OptionIterator';
 import './SearchPage.css';
 
-// ── Design Patterns ──
-import { adaptFeedProfile } from '../patterns/ApiResponseAdapter';     // Adapter
-import { buildSearchFilters } from '../patterns/FilterComposite';      // Composite
-import { MatchIterator } from '../patterns/MatchIterator';             // Iterator
-import { eventBus } from '../patterns/EventBus';                       // Observer
-import { ProfileCardTemplate } from '../patterns/ProfileCardTemplate'; // Template
+import { adaptFeedProfile } from '../patterns/ApiResponseAdapter';
+import { buildSearchFilters } from '../patterns/FilterComposite';
+import { MatchIterator } from '../patterns/MatchIterator';
+import { eventBus } from '../patterns/EventBus';
+import { ProfileCardTemplate } from '../patterns/ProfileCardTemplate';
+
+function selectOptionsFromIterator(items) {
+    const nodes = [];
+    const iter = new OptionIterator(items || []);
+    let step = iter.next();
+    while (!step.done) {
+        const v = step.value;
+        nodes.push(
+            <option key={v} value={v}>
+                {v}
+            </option>,
+        );
+        step = iter.next();
+    }
+    return nodes;
+}
 
 export const SearchPage = () => {
     const [query, setQuery] = useState('');
     const [profiles, setProfiles] = useState([]);
     const [filtered, setFiltered] = useState([]);
-    const [filters, setFilters] = useState({ location: '', sect: '', caste: '', education: '' });
+    const [filterState, setFilterState] = useState({ location: '', sect: '', caste: '', education: '' });
     const [favorites, setFavorites] = useState(new Set());
     const navigate = useNavigate();
+
+    const { data: catalogData, loading: catalogLoading, error: catalogError } = useCatalogMetadata();
+    const catalogFilters = catalogData?.filters;
+
+    const filterLists = useMemo(
+        () => ({
+            locations: catalogFilters?.locations ?? [],
+            sects: catalogFilters?.sects ?? [],
+            castes: catalogFilters?.caste ?? [],
+            education: catalogFilters?.education ?? [],
+        }),
+        [catalogFilters],
+    );
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const res = await api.get('accounts/feed/');
-                // Adapter pattern — normalise raw API data to UnifiedProfile
-                const adapted = (res.data || []).map(adaptFeedProfile);
+                const data = Array.isArray(res.data) ? res.data : [];
+                setFavorites(createFavoritesSetFromFeedRows(data));
+                const adapted = data.map(adaptFeedProfile);
                 setProfiles(adapted);
                 setFiltered(adapted);
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+            }
         };
         fetchData();
     }, []);
 
     useEffect(() => {
-        // Composite pattern — build filter tree and apply uniformly
-        const filterTree = buildSearchFilters(filters, query);
-        const result = filterTree.apply(profiles);
-        setFiltered(result);
-    }, [query, filters, profiles]);
+        const filterTree = buildSearchFilters(filterState, query);
+        setFiltered(filterTree.apply(profiles));
+    }, [query, filterState, profiles]);
 
     const toggleFavorite = async (id) => {
+        const targetId = Number(id);
+        if (Number.isNaN(targetId)) return;
         try {
-            const res = await api.post('accounts/favorites/toggle/', { target_id: id });
-            setFavorites(prev => {
+            const res = await api.post('accounts/favorites/toggle/', { target_id: targetId });
+            setFavorites((prev) => {
                 const next = new Set(prev);
-                if (res.data.is_favorite) next.add(id);
-                else next.delete(id);
+                if (res.data.is_favorite) next.add(targetId);
+                else next.delete(targetId);
                 return next;
             });
-            // Observer pattern — publish event
             eventBus.publish('favorite.toggled', { userId: id, isFavorite: res.data.is_favorite });
         } catch (err) {
             console.error('Failed to toggle favorite', err);
         }
     };
 
-    // Iterator pattern — wrap filtered results for sequential access
     const matchIterator = new MatchIterator(filtered);
     const displayList = matchIterator.toArray();
 
-    // Template pattern — render callbacks for the ProfileCardTemplate
     const renderBadge = (p) =>
-        p.compatibilityScore ? <span className="sp-compat-tag sp-compat-tag--red">{p.compatibilityScore}%</span> : null;
+        p.compatibilityScore ? (
+            <span className="sp-compat-tag sp-compat-tag--red">{p.compatibilityScore}%</span>
+        ) : null;
 
     const renderMeta = (p) => (
         <>
             {p.location && <div className="sp-profile-meta">📍 {p.location}</div>}
             {p.education && <div className="sp-profile-meta">🎓 {p.education}</div>}
             {p.bio && <div className="sp-profile-meta">💼 {p.bio}</div>}
-            {p.compatibilityScore && (
-                <div className="sp-compat-tags">{renderBadge(p)}</div>
-            )}
-            <button className="sp-view-btn" onClick={() => navigate(`/profile/${p.id}`)}>View Profile</button>
+            {p.compatibilityScore ? <div className="sp-compat-tags">{renderBadge(p)}</div> : null}
+            <button type="button" className="sp-view-btn" onClick={() => navigate(`/profile/${p.id}`)}>
+                View Profile
+            </button>
         </>
     );
 
     return (
         <div className="sp-wrap">
-            {/* Search Bar */}
             <div className="sp-searchbar">
-                <svg className="sp-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input className="sp-input" type="text" placeholder="Search profiles with names or IDs..." value={query} onChange={e => setQuery(e.target.value)} />
+                <svg
+                    className="sp-search-icon"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#999"
+                    strokeWidth="2"
+                >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                    className="sp-input"
+                    type="text"
+                    placeholder="Search profiles with names or IDs..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                />
             </div>
 
-            {/* Filters Card */}
+            {catalogError ? (
+                <p className="sp-banner sp-banner--warn" role="alert">
+                    Filters could not be loaded; narrow results with search only.
+                </p>
+            ) : null}
+            {catalogLoading && !catalogData ? <p className="sp-banner">Loading filters…</p> : null}
+
             <div className="sp-filters-card">
                 <div className="sp-filters-header">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B1A1A" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="#8B1A1A"/><circle cx="16" cy="12" r="2" fill="#8B1A1A"/><circle cx="10" cy="18" r="2" fill="#8B1A1A"/></svg>
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#8B1A1A"
+                        strokeWidth="2"
+                    >
+                        <line x1="4" y1="6" x2="20" y2="6" />
+                        <line x1="4" y1="12" x2="20" y2="12" />
+                        <line x1="4" y1="18" x2="20" y2="18" />
+                        <circle cx="8" cy="6" r="2" fill="#8B1A1A" />
+                        <circle cx="16" cy="12" r="2" fill="#8B1A1A" />
+                        <circle cx="10" cy="18" r="2" fill="#8B1A1A" />
+                    </svg>
                     <span>Filters</span>
                 </div>
                 <div className="sp-filter-group">
                     <label className="sp-label">Location</label>
-                    <select className="sp-select" value={filters.location} onChange={e => setFilters({...filters, location: e.target.value})}>
+                    <select
+                        className="sp-select"
+                        value={filterState.location}
+                        onChange={(e) => setFilterState({ ...filterState, location: e.target.value })}
+                    >
                         <option value="">Select location</option>
-                        <option value="Karachi">Karachi</option><option value="Lahore">Lahore</option><option value="Islamabad">Islamabad</option>
+                        {selectOptionsFromIterator(filterLists.locations)}
                     </select>
                 </div>
                 <div className="sp-filter-group">
                     <label className="sp-label">Sect</label>
-                    <select className="sp-select" value={filters.sect} onChange={e => setFilters({...filters, sect: e.target.value})}>
+                    <select
+                        className="sp-select"
+                        value={filterState.sect}
+                        onChange={(e) => setFilterState({ ...filterState, sect: e.target.value })}
+                    >
                         <option value="">Select sect</option>
-                        <option value="Sunni">Sunni</option><option value="Shia">Shia</option><option value="Just Muslim">Just Muslim</option>
+                        {selectOptionsFromIterator(filterLists.sects)}
                     </select>
                 </div>
                 <div className="sp-filter-group">
                     <label className="sp-label">Caste</label>
-                    <select className="sp-select" value={filters.caste} onChange={e => setFilters({...filters, caste: e.target.value})}>
+                    <select
+                        className="sp-select"
+                        value={filterState.caste}
+                        onChange={(e) => setFilterState({ ...filterState, caste: e.target.value })}
+                    >
                         <option value="">Select caste</option>
-                        <option value="Syed">Syed</option><option value="Rajput">Rajput</option><option value="Arain">Arain</option><option value="Jat">Jat</option><option value="Other">Other</option>
+                        {selectOptionsFromIterator(filterLists.castes)}
                     </select>
                 </div>
                 <div className="sp-filter-group">
                     <label className="sp-label">Education Status</label>
-                    <select className="sp-select" value={filters.education} onChange={e => setFilters({...filters, education: e.target.value})}>
+                    <select
+                        className="sp-select"
+                        value={filterState.education}
+                        onChange={(e) => setFilterState({ ...filterState, education: e.target.value })}
+                    >
                         <option value="">Select education level</option>
-                        <option value="bachelors">Bachelors</option><option value="masters">Masters</option><option value="phd">PhD</option>
+                        {selectOptionsFromIterator(filterLists.education)}
                     </select>
                 </div>
-                <button className="sp-apply-btn" onClick={() => {}}>Apply Filters</button>
+
+                <button
+                    type="button"
+                    className="sp-apply-btn"
+                    onClick={() => window.scrollTo({ top: 400, behavior: 'smooth' })}
+                >
+                    Apply Filters
+                </button>
             </div>
 
-            {/* Browse Profiles */}
             <h3 className="sp-browse-title">Browse Profiles</h3>
             {displayList.length === 0 ? (
                 <div className="sp-empty">
@@ -128,7 +219,6 @@ export const SearchPage = () => {
                 </div>
             ) : (
                 <div className="sp-grid">
-                    {/* Template pattern — fixed card skeleton with variable render slots */}
                     {displayList.map((p, i) => (
                         <ProfileCardTemplate
                             key={p.id}
@@ -137,7 +227,7 @@ export const SearchPage = () => {
                             className="sp-profile-card"
                             renderMeta={renderMeta}
                             onFavorite={toggleFavorite}
-                            isFavorite={favorites.has(p.id)}
+                            isFavorite={favorites.has(Number(p.id))}
                         />
                     ))}
                 </div>

@@ -1,9 +1,22 @@
 .ob-page {
     min-height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     background: transparent;
+}
+
+.ob-catalog-alert {
+    width: min(1100px, 95vw);
+    margin: 0 auto 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 0.9rem;
+    box-sizing: border-box;
 }
 
 .ob-shell {

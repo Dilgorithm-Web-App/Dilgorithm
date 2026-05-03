@@ -1,9 +1,15 @@
 from rest_framework import serializers
 from django.db.models import Q
-from .models import CustomUser, Interest, UserProfile, FamilyConnection, ChatMessage, Report, BlockedUser
-
-from .models import CustomUser, Interest, UserProfile, FamilyConnection, FamilyMember
-from .models import ChatMessage
+from .models import (
+    ChatMessage,
+    CustomUser,
+    FamilyConnection,
+    FamilyMember,
+    Interest,
+    Report,
+    BlockedUser,
+    UserProfile,
+)
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
@@ -73,6 +79,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'sect', 'caste', 'dateOfBirth', 'age',
         )
 
+    def validate_images(self, value):
+        """Reject clearing or emptying photos via API; replacements must include a non-empty image."""
+        if value is None:
+            raise serializers.ValidationError('Profile photo is required.')
+        if not isinstance(value, list) or len(value) == 0:
+            raise serializers.ValidationError('Profile photo is required.')
+        first = value[0]
+        if not isinstance(first, str) or not first.strip():
+            raise serializers.ValidationError('Profile photo is required.')
+        return value
+
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     senderId = serializers.IntegerField(source='sender.id', read_only=True)
@@ -91,25 +108,42 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 class ChatContactSerializer(serializers.ModelSerializer):
     fullName = serializers.SerializerMethodField()
     profileImage = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     roomName = serializers.SerializerMethodField()
     is_online = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email', 'fullName', 'profileImage', 'status', 'roomName', 'is_online')
+        fields = (
+            'id',
+            'username',
+            'email',
+            'fullName',
+            'profileImage',
+            'images',
+            'status',
+            'roomName',
+            'is_online',
+        )
 
     def get_fullName(self, obj):
         try:
             return obj.profile.fullName
         except Exception:
-            return obj.username or obj.email
+            return obj.username or obj.email or ''
 
     def get_profileImage(self, obj):
         try:
             return obj.profile.profileImage
         except Exception:
             return None
+
+    def get_images(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile and isinstance(getattr(profile, 'images', None), list):
+            return profile.images
+        return []
 
     def get_status(self, obj):
         request = self.context.get('request')

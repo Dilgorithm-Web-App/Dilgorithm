@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { CHAT_AVATAR_COLORS } from '../data/chatContacts';
+import { getProfilePhotoImgSrc } from '../utils/profileImageSrc';
 import './ChatListPage.css';
 
 export const ChatListPage = () => {
@@ -29,23 +29,24 @@ export const ChatListPage = () => {
                 {error ? <p className="cl-error">{error}</p> : null}
 
                 <div className="cl-list">
-                    {contacts.map((contact, i) => (
+                    {contacts.map((contact) => (
                         <button
                             key={contact.id}
                             className="cl-item"
                             onClick={() => navigate(`/chat/room_${contact.id}`)}
                         >
-                            <div
-                                className="cl-avatar"
-                                style={{
-                                    background: contact.profileImage ? 'transparent' : CHAT_AVATAR_COLORS[i % CHAT_AVATAR_COLORS.length],
-                                }}
-                            >
-                                {contact.profileImage ? (
-                                    <img className="cl-avatar-img" src={contact.profileImage} alt="" />
-                                ) : (
-                                    (contact.username || contact.email || 'U')[0]?.toUpperCase()
-                                )}
+                            <div className="cl-avatar">
+                                <img
+                                    src={getProfilePhotoImgSrc(
+                                        contact.images?.length
+                                            ? contact.images
+                                            : contact.profileImage
+                                              ? [contact.profileImage]
+                                              : [],
+                                    )}
+                                    alt=""
+                                    className="cl-avatar-img"
+                                />
                             </div>
                             <div className="cl-meta">
                                 <div className="cl-name">{contact.fullName || contact.username || contact.email}</div>
