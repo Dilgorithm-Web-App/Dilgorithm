@@ -1,7 +1,7 @@
 .pref-page {
   min-height: 100%;
   padding: clamp(1.25rem, 4vw, 2.5rem);
-  background: linear-gradient(180deg, #fff1f2 0%, #fdf2f8 45%, #faf5ff 100%);
+  background: transparent;
   font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
   color: #0f0d0e;
   box-sizing: border-box;
@@ -41,6 +41,26 @@
   background: #fef2f2;
   border-color: #fecaca;
   box-shadow: 0 2px 8px rgba(157, 0, 0, 0.08);
+}
+
+.pref-mini-link {
+  display: block;
+  width: fit-content;
+  margin: -0.5rem 0 1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #991b1b;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pref-mini-link:hover {
+  color: #c62828;
 }
 
 .pref-title {

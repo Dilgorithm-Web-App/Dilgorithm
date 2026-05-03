@@ -15,6 +15,7 @@ const PAGE_META = {
     '/engagement-moderation': 'Settings',
     '/app-configuration': 'Settings',
     '/about-us': 'About Us',
+    '/edit-profile': 'Edit Profile',
 };
 
 export const DashboardLayout = ({ children }) => {
@@ -49,7 +50,11 @@ export const DashboardLayout = ({ children }) => {
 
     const path = location.pathname;
     const isChat = path.startsWith('/chat');
-    const pageLabel = isChat ? 'Chats' : (PAGE_META[path] || 'Home');
+    const pageLabel = isChat
+        ? 'Chats'
+        : path.startsWith('/profile/')
+          ? 'Profile'
+          : (PAGE_META[path] || 'Home');
 
     const navItems = [
         { id: 'home', path: '/home', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },

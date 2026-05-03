@@ -8,7 +8,7 @@ export const SettingsPage = () => {
     const navigate = useNavigate();
 
     const items = [
-        { label: 'Account &\nProfile', action: () => navigate('/preferences') },
+        { label: 'Account &\nProfile', action: () => navigate('/edit-profile') },
         { label: 'Engagement &\nModeration', action: () => navigate('/engagement-moderation') },
         { label: 'App\nConfiguration', action: () => navigate('/app-configuration') },
         { label: 'Support &\nLegal', action: () => navigate('/about-us') },
