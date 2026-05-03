@@ -8,7 +8,9 @@ Design patterns in the matching pipeline (course / architecture documentation).
   when narrowing the candidate queryset (Single Responsibility per filter).
 - Iterator: ``ranked_match_records`` yields ranked results for sequential consumption.
 
-Principles: SRP per class, DIP via adapter boundary, OCP via template hooks.
+Principles: SRP per class; DIP via adapter boundary; OCP via template hooks;
+ISP via small filter/scorer surfaces; LSP via substitutable template hooks and
+composite nodes that honor the same ``apply`` contract.
 """
 
 from __future__ import annotations
