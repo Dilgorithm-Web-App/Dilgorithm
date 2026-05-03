@@ -1,11 +1,13 @@
 import { useState, useContext, useRef } from 'react';
 import { AuthContext } from '../AuthContext';
 import api from '../api';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import ReCAPTCHA from 'react-google-recaptcha';
-import parchmentBg from '../assets/parchment_bg.png';
 import dgHeartLogo from '../assets/dg_heart_logo.png';
+
+/** Served from `public/parchment_bg.png` so the URL is stable across machines and builds (avoids bundler-only asset issues). */
+const PARCHMENT_BG_URL = `${import.meta.env.BASE_URL}parchment_bg.png`;
 
 export const Login = () => {
     const [email, setEmail] = useState('');
@@ -52,10 +54,11 @@ export const Login = () => {
                 minHeight: '200vh',
                 overflowY: 'auto',
                 width: '100%',
-                backgroundImage: `url(${parchmentBg})`,
+                backgroundImage: `url(${PARCHMENT_BG_URL})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundAttachment: 'fixed',
+                backgroundColor: 'transparent',
                 padding: '0',
             }}
         >
@@ -142,8 +145,11 @@ export const Login = () => {
                         }}
                     />
                     <div style={{ height: '22px' }} />
-                    <p style={{ marginTop: 0, marginBottom: '18px' }}>
+                    <p style={{ marginTop: 0, marginBottom: '10px' }}>
                         Need an account? <a href="/register">Register here</a>.
+                    </p>
+                    <p style={{ marginTop: 0, marginBottom: '18px' }}>
+                        Forgot password? <Link to="/forgot-password">Reset it here</Link>.
                     </p>
 
                     <div
@@ -233,7 +239,7 @@ export const Register = () => {
     const [weight, setWeight] = useState('');
     const navigate = useNavigate();
     const registerPalette = {
-        pageBg: '#fff9fb',
+        pageBg: 'transparent',
         panelBg: '#fffdfd',
         panelBorder: '#f1e6eb',
         label: '#4b4a55',
@@ -316,7 +322,6 @@ export const Register = () => {
                         style={{
                             width: '110px',
                             objectFit: 'contain',
-                            opacity: 0.9,
                             mixBlendMode: 'normal',
                             justifySelf: 'start',
                         }}
@@ -478,6 +483,7 @@ export const Register = () => {
 export const RegisterCredentials2FA = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { setSession } = useContext(AuthContext);
     const profile = location.state?.profile;
 
     const [email, setEmail] = useState('');
@@ -514,19 +520,23 @@ export const RegisterCredentials2FA = () => {
     const verifyOtp = async (e) => {
         e.preventDefault();
         try {
-            await api.post('accounts/register/verify-2fa/', {
+            const { data } = await api.post('accounts/register/verify-2fa/', {
                 email,
                 otp,
             });
-            alert('Registration complete. You can now log in.');
-            navigate('/login');
+            if (data.access) {
+                setSession(data.access, data.refresh, { email: data.email });
+                navigate('/register/photo', { replace: true });
+            } else {
+                navigate('/login');
+            }
         } catch (error) {
             setStatusMessage(error.response?.data?.detail || 'OTP verification failed.');
         }
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: '#fff9fb', padding: '40px 20px', boxSizing: 'border-box' }}>
+        <div style={{ minHeight: '100vh', background: 'transparent', padding: '40px 20px', boxSizing: 'border-box' }}>
             <div style={{ maxWidth: '620px', margin: '0 auto', background: '#fffdfd', border: '1px solid #f1e6eb', borderRadius: '14px', padding: '24px' }}>
                 <div style={{ marginBottom: '12px' }}>
                     <button

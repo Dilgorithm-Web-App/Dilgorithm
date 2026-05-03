@@ -1,3 +1,4 @@
+/** State pattern: step index is encapsulated; transitions return new state (immutable). */
 class StepState {
     constructor(index, totalSteps) {
         this.index = index;

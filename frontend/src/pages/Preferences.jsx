@@ -1,103 +1,182 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
+import { useCatalogMetadata } from '../hooks/useCatalogMetadata';
+import './Preferences.css';
+import { FamilyForm } from '../components/FamilyForm';
+
+function mergeOption(value, options) {
+    const list = Array.isArray(options) ? [...options] : [];
+    if (value && !list.includes(value)) list.unshift(value);
+    return list;
+}
 
 export const Preferences = () => {
-    const [interests, setInterests] = useState('');
+    const [selectedInterests, setSelectedInterests] = useState([]);
     const [sect, setSect] = useState('');
     const [location, setLocation] = useState('');
+    const [prefsLoaded, setPrefsLoaded] = useState(false);
     const navigate = useNavigate();
 
-    // Load existing preferences when the page opens
+    const { data: catalogData, loading: catalogLoading, error: catalogError } = useCatalogMetadata();
+
+    const filters = catalogData?.filters;
+    const availableInterests = catalogData?.interests ?? [];
+
+    const locationOptions = useMemo(() => mergeOption(location, filters?.locations), [location, filters?.locations]);
+    const sectOptions = useMemo(() => mergeOption(sect, filters?.sects), [sect, filters?.sects]);
+
     useEffect(() => {
         const fetchPreferences = async () => {
             try {
                 const response = await api.get('accounts/preferences/');
                 const data = response.data;
-                // Convert the array back to a comma-separated string for the text box
-                setInterests(data.interestList.join(', '));
-                setSect(data.partnerCriteria.sect || '');
-                setLocation(data.partnerCriteria.location || '');
+                const list = data.interestList;
+                setSelectedInterests(Array.isArray(list) ? [...list] : []);
+                setSect(data.partnerCriteria?.sect || '');
+                setLocation(data.partnerCriteria?.location || '');
             } catch (error) {
-                console.error("Failed to load preferences:", error);
+                console.error('Failed to load preferences:', error);
+            } finally {
+                setPrefsLoaded(true);
             }
         };
         fetchPreferences();
     }, []);
 
+    const toggleInterest = (label) => {
+        setSelectedInterests((prev) =>
+            prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label],
+        );
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Convert comma-separated string into an array (e.g. "Coding, Hiking" -> ["Coding", "Hiking"])
-        const interestArray = interests.split(',').map(item => item.trim()).filter(item => item !== '');
-
         const payload = {
-            interestList: interestArray,
+            interestList: selectedInterests,
             partnerCriteria: {
-                sect: sect,
-                location: location
-            }
+                sect,
+                location,
+            },
         };
 
         try {
             await api.put('accounts/preferences/', payload);
             alert('Preferences saved successfully!');
-            navigate('/feed'); // Send them back to the feed to see new matches!
+            navigate('/feed');
         } catch (error) {
             alert('Failed to save preferences.');
         }
     };
 
     return (
-        <div style={{ maxWidth: '500px', margin: '50px auto', padding: '20px', fontFamily: 'sans-serif' }}>
-            <h2>Set Your Preferences</h2>
-            <p>Help the Dilgorithm AI find your perfect match.</p>
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-
-                <label>
-                    <strong>Your Interests (comma separated)</strong><br />
-                    <input
-                        type="text"
-                        value={interests}
-                        onChange={(e) => setInterests(e.target.value)}
-                        placeholder="e.g. Reading, Hiking, Cooking"
-                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                    />
-                </label>
-
-                <label>
-                    <strong>Preferred Sect (Religious Constraint)</strong><br />
-                    <select
-                        value={sect}
-                        onChange={(e) => setSect(e.target.value)}
-                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                    >
-                        <option value="">Any</option>
-                        <option value="Sunni">Sunni</option>
-                        <option value="Shia">Shia</option>
-                        <option value="Just Muslim">Just Muslim</option>
-                    </select>
-                </label>
-
-                <label>
-                    <strong>Preferred Location</strong><br />
-                    <input
-                        type="text"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="e.g. Lahore, Pakistan"
-                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                    />
-                </label>
-
-                <button type="submit" style={{ padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' }}>
-                    Save AI Preferences
+        <div className="pref-page">
+            <div className="pref-card">
+                <button type="button" className="pref-back" onClick={() => navigate('/settings')}>
+                    Back
                 </button>
-                <button type="button" onClick={() => navigate('/feed')} style={{ padding: '10px', backgroundColor: '#6c757d', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '5px' }}>
-                    Cancel & Return to Feed
+                <button type="button" className="pref-mini-link" onClick={() => navigate('/edit-profile')}>
+                    Edit photo & bio
                 </button>
-            </form>
+                <h1 className="pref-title">Set Your Preferences</h1>
+                <p className="pref-sub">Help the Dilgorithm AI find your perfect match.</p>
+
+                {catalogError ? (
+                    <p className="pref-banner pref-banner--error" role="alert">
+                        Could not load filter lists. Check connection.
+                    </p>
+                ) : null}
+                {catalogLoading && !catalogData ? (
+                    <p className="pref-banner">Loading options…</p>
+                ) : null}
+
+                <form className="pref-form" onSubmit={handleSubmit}>
+                    <div className="pref-field">
+                        <span className="pref-label" id="pref-interests-label">
+                            Your interests
+                        </span>
+                        <p className="pref-hint">Tap to select from server-provided interests.</p>
+                        <div className="pref-pills" role="group" aria-labelledby="pref-interests-label">
+                            {availableInterests.map((item) => {
+                                const on = selectedInterests.includes(item);
+                                return (
+                                    <button
+                                        key={item}
+                                        type="button"
+                                        className={`pref-pill ${on ? 'pref-pill--on' : ''}`}
+                                        aria-pressed={on}
+                                        onClick={() => toggleInterest(item)}
+                                    >
+                                        {item}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {prefsLoaded && availableInterests.length === 0 && !catalogLoading ? (
+                            <p className="pref-hint">No interests returned from the server.</p>
+                        ) : null}
+                    </div>
+
+                    <div className="pref-field">
+                        <label className="pref-label" htmlFor="pref-sect">
+                            Preferred sect (religious constraint)
+                        </label>
+                        <select
+                            id="pref-sect"
+                            className="pref-select"
+                            value={sect}
+                            onChange={(e) => setSect(e.target.value)}
+                            disabled={!filters?.sects?.length && !sect}
+                        >
+                            <option value="">Any</option>
+                            {sectOptions.map((opt) => (
+                                <option key={opt} value={opt}>
+                                    {opt}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="pref-field">
+                        <label className="pref-label" htmlFor="pref-location">
+                            Preferred location
+                        </label>
+                        <select
+                            id="pref-location"
+                            className="pref-select"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            disabled={!filters?.locations?.length && !location}
+                        >
+                            <option value="">Any</option>
+                            {locationOptions.map((opt) => (
+                                <option key={opt} value={opt}>
+                                    {opt}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="pref-actions">
+                        <button type="submit" className="pref-btn pref-btn--save">
+                            Save AI preferences
+                        </button>
+                        <button
+                            type="button"
+                            className="pref-btn pref-btn--profile"
+                            onClick={() => navigate('/edit-profile')}
+                        >
+                            Edit profile
+                        </button>
+                        <button type="button" className="pref-btn pref-btn--ghost" onClick={() => navigate('/feed')}>
+                            Cancel & return to feed
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <FamilyForm />
         </div>
     );
 };

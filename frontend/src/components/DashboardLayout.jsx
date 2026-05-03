@@ -1,6 +1,8 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
+import api from '../api';
+import { getProfilePhotoImgSrc } from '../utils/profileImageSrc';
 import dgLogo from '../assets/dg_heart_logo.png';
 import brandLogo from '../assets/dilgorithm_logo.png';
 import './DashboardLayout.css';
@@ -11,17 +13,44 @@ const PAGE_META = {
     '/search': 'For You Page',
     '/settings': 'Settings',
     '/preferences': 'Settings',
+    '/profile/edit': 'Edit profile',
+    '/engagement-moderation': 'Settings',
+    '/app-configuration': 'Settings',
     '/about-us': 'About Us',
+    '/edit-profile': 'Edit Profile',
 };
 
 export const DashboardLayout = ({ children }) => {
-    const { logout } = useContext(AuthContext);
+    const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
+    const [avatarImgSrc, setAvatarImgSrc] = useState(() => getProfilePhotoImgSrc([]));
+
+    useEffect(() => {
+        if (!user?.token) return undefined;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { data } = await api.get('accounts/profile/');
+                if (cancelled) return;
+                const imgs = Array.isArray(data.images) ? data.images : [];
+                setAvatarImgSrc(getProfilePhotoImgSrc(imgs));
+            } catch {
+                if (!cancelled) setAvatarImgSrc(getProfilePhotoImgSrc([]));
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.token, location.pathname]);
 
     const path = location.pathname;
     const isChat = path.startsWith('/chat');
-    const pageLabel = isChat ? 'Chats' : (PAGE_META[path] || 'Home');
+    const pageLabel = isChat
+        ? 'Chats'
+        : path.startsWith('/profile/')
+          ? 'Profile'
+          : (PAGE_META[path] || 'Home');
 
     const navItems = [
         { id: 'home', path: '/home', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
@@ -44,7 +73,7 @@ export const DashboardLayout = ({ children }) => {
                     </button>
                 ))}
                 <div className="dl-sidebar-spacer" />
-                <button className={`dl-sidebar-btn ${path === '/settings' || path === '/preferences' ? 'dl-sidebar-btn--active' : ''}`} onClick={() => navigate('/settings')} title="Settings">
+                <button className={`dl-sidebar-btn ${path === '/settings' || path === '/preferences' || path === '/profile/edit' || path === '/engagement-moderation' || path === '/app-configuration' || path === '/about-us' ? 'dl-sidebar-btn--active' : ''}`} onClick={() => navigate('/settings')} title="Settings">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
             </aside>
@@ -59,7 +88,14 @@ export const DashboardLayout = ({ children }) => {
                         <img src={brandLogo} alt="Dilgorithm" className="dl-header-brand" />
                     </div>
                     <div className="dl-header-right">
-                        <div className="dl-header-avatar" onClick={() => navigate('/settings')}>U</div>
+                        <button
+                            type="button"
+                            className="dl-header-avatar"
+                            onClick={() => navigate('/settings')}
+                            aria-label="Open settings"
+                        >
+                            <img src={avatarImgSrc} alt="" className="dl-header-avatar-img" />
+                        </button>
                     </div>
                 </header>
                 <main className="dl-content">{children}</main>

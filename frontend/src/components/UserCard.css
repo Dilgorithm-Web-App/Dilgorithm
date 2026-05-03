@@ -1,0 +1,29 @@
+.uc-photo {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: #2a2829;
+}
+
+.uc-photo-img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.uc-photo--tall {
+  height: 220px;
+}
+
+.uc-photo .fd-card-badge,
+.uc-photo .fd-fav,
+.uc-photo .sp-heart-btn {
+  z-index: 2;
+}

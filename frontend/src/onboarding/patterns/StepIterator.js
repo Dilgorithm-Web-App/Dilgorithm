@@ -1,3 +1,4 @@
+/** Iterator pattern: sequential access over ONBOARDING_STEPS without exposing internals. */
 export class StepIterator {
     constructor(steps, startIndex = 0) {
         this.steps = steps;

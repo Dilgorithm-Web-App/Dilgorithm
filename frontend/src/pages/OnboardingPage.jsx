@@ -3,6 +3,7 @@ import { BaseStepLayout } from '../onboarding/layouts/BaseStepLayout';
 import { StepFactory } from '../onboarding/factory/StepFactory';
 import { TOTAL_STEPS } from '../onboarding/config/stepsConfig';
 import { useOnboardingLogic } from '../onboarding/hooks/useOnboardingLogic';
+import { useCatalogMetadata } from '../hooks/useCatalogMetadata';
 import './OnboardingPage.css';
 
 export const OnboardingPage = () => {
@@ -30,8 +31,23 @@ export const OnboardingPage = () => {
 
     const StepComponent = StepFactory.create(currentStep.key);
 
+    const { data: catalogData, loading: catalogLoading, error: catalogError } = useCatalogMetadata();
+    const optionLists = catalogData
+        ? {
+              locations: catalogData.filters.locations,
+              sects: catalogData.filters.sects,
+              education: catalogData.filters.education,
+              interests: catalogData.interests,
+          }
+        : {};
+
     return (
         <div className="ob-page">
+            {catalogError ? (
+                <div className="ob-catalog-alert" role="alert">
+                    Could not load profile options. Check your connection and refresh.
+                </div>
+            ) : null}
             <BaseStepLayout
                 stepLabel={`Step ${stepIndex + 1} / ${TOTAL_STEPS}`}
                 completedLabel={`${currentStep.completedPercent}% COMPLETED`}
@@ -50,6 +66,8 @@ export const OnboardingPage = () => {
                     placeholder={currentStep.placeholder}
                     value={currentValue}
                     onChange={setCurrentValue}
+                    optionLists={optionLists}
+                    catalogLoading={catalogLoading}
                 />
             </BaseStepLayout>
         </div>

@@ -6,7 +6,7 @@
 .dl-layout {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #FFF1F2 0%, #FDF2F8 50%, #FAF5FF 100%);
+  background: transparent;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -110,17 +110,25 @@
 .dl-header-avatar {
   width: 42px;
   height: 42px;
+  border: none;
+  padding: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8B1A1A, #C62828);
+  background: #e8e4e6;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 15px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(139, 26, 26, 0.25);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.dl-header-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .dl-header-avatar:hover {

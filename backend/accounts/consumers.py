@@ -1,68 +1,85 @@
 import json
+
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.contrib.auth.models import AnonymousUser
+
+from .serializers import ChatMessageSerializer
+from .services.chat_message_service import (
+    canonical_chat_group_name,
+    create_chat_message,
+    get_contact_user,
+)
+
+
+@database_sync_to_async
+def _persist_chat_and_serialize(sender, recipient, text):
+    cm, err = create_chat_message(sender, recipient, text)
+    if err:
+        return None, err
+    return ChatMessageSerializer(cm).data, None
+
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket chat: JWT user required, room path room_<contact_id> verified against DB.
+    Messages persist via shared chat_message_service (SRP, aligned with REST).
+    """
+
     async def connect(self):
-        # Grab the room name from the URL (e.g., room "user1_user2")
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = f'chat_{self.room_name}'
+        user = self.scope.get("user")
+        if not user or isinstance(user, AnonymousUser) or not user.is_authenticated:
+            await self.close(code=4001)
+            return
 
-        # Join the room group
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
+        try:
+            self.contact_id = int(self.scope["url_route"]["kwargs"]["contact_id"])
+        except (KeyError, ValueError, TypeError):
+            await self.close(code=4002)
+            return
 
-        # Accept the WebSocket connection
+        contact = await database_sync_to_async(get_contact_user)(user, self.contact_id)
+        if not contact:
+            await self.close(code=4003)
+            return
+
+        self.user = user
+        self.contact = contact
+        self.room_group_name = canonical_chat_group_name(user.id, self.contact_id)
+
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Leave the room group
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        if hasattr(self, "room_group_name"):
+            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    # Receive message from WebSocket (React frontend)
     async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-        sender = text_data_json.get('sender', 'Anonymous')
+        if not hasattr(self, "user") or not hasattr(self, "contact"):
+            return
+        try:
+            payload = json.loads(text_data)
+        except json.JSONDecodeError:
+            await self.send(
+                text_data=json.dumps({"type": "error", "detail": "Invalid JSON payload."})
+            )
+            return
 
-        # UC-25: Automatic Profanity Detection
-        # A simple list for our MVP. You can expand this or connect it to an NLP API later.
-        profanity_list = ["badword1", "badword2", "hate", "scam"] 
-        
-        is_clean = True
-        for word in profanity_list:
-            if word in message.lower():
-                is_clean = False
-                break
+        if payload.get("type") != "chat.message":
+            return
 
-        if not is_clean:
-            # Block message and warn sender
-            await self.send(text_data=json.dumps({
-                'error': 'Message blocked: Violates community guidelines.'
-            }))
-            return # Stop processing the message
+        text = payload.get("message")
+        data, err = await _persist_chat_and_serialize(self.user, self.contact, text)
+        if err:
+            await self.send(text_data=json.dumps({"type": "error", "detail": err}))
+            return
 
-        # If clean, send message to the entire room group
         await self.channel_layer.group_send(
             self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': message,
-                'sender': sender
-            }
+            {"type": "chat.broadcast", "message": data},
         )
 
-    # Receive message from room group and send it down to the frontend
-    async def chat_message(self, event):
-        message = event['message']
-        sender = event['sender']
-
-        # Send message to WebSocket
-        await self.send(text_data=json.dumps({
-            'message': message,
-            'sender': sender
-        }))
+    async def chat_broadcast(self, event):
+        await self.send(
+            text_data=json.dumps({"type": "chat.event", "message": event["message"]})
+        )
