@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
 import './Preferences.css';
+import { FamilyForm } from '../components/FamilyForm';
 
 export const Preferences = () => {
     const [interests, setInterests] = useState('');
@@ -124,6 +125,8 @@ export const Preferences = () => {
                     </div>
                 </form>
             </div>
+            
+            <FamilyForm />
         </div>
     );
 };

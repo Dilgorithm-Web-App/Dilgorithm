@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.db.models import Q
 from .models import CustomUser, Interest, UserProfile, FamilyConnection, ChatMessage, Report, BlockedUser
 
+from .models import CustomUser, Interest, UserProfile, FamilyConnection, FamilyMember
+from .models import ChatMessage
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
@@ -163,3 +165,7 @@ class BlockedUserSerializer(serializers.ModelSerializer):
             return obj.blocked.profile.fullName
         except Exception:
             return obj.blocked.username
+class FamilyMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FamilyMember
+        fields = ('id', 'relationship', 'occupation', 'education')

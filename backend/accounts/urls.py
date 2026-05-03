@@ -23,6 +23,7 @@ from .views import (
     BlockedUsersListView,
     PasswordResetRequestView,
     PasswordResetVerifyView,
+    FamilyMemberView,
 )
 
 urlpatterns = [
@@ -49,4 +50,5 @@ urlpatterns = [
     path('blocked-users/', BlockedUsersListView.as_view(), name='blocked_users'),
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset/verify/', PasswordResetVerifyView.as_view(), name='password_reset_verify'),
+    path('family-members/', FamilyMemberView.as_view(), name='family_members'),
 ]

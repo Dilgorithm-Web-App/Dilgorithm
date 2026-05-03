@@ -16,6 +16,7 @@ import random
 import urllib.parse
 import urllib.request
 from .models import CustomUser, Interest, UserProfile, FamilyConnection, Report, ChatMessage, BlockedUser
+from .models import CustomUser, Interest, UserProfile, FamilyConnection, Report, ChatMessage, FamilyMember
 from .serializers import (
     RegisterSerializer,
     MatchFeedSerializer,
@@ -26,6 +27,7 @@ from .serializers import (
     FamilyConnectionSerializer,
     ReportSerializer,
     BlockedUserSerializer,
+    FamilyMemberSerializer,
 )
 from .ai_engine import get_ranked_matches
 
@@ -582,6 +584,11 @@ class ToggleFavoriteView(APIView):
             target_user = CustomUser.objects.get(id=target_id)
             user_profile = request.user.profile
 
+            
+        try:
+            target_user = CustomUser.objects.get(id=target_id)
+            user_profile = request.user.profile
+            
             if target_user in user_profile.favorites.all():
                 user_profile.favorites.remove(target_user)
                 return Response({"detail": "Removed from favorites", "is_favorite": False}, status=status.HTTP_200_OK)
@@ -589,6 +596,7 @@ class ToggleFavoriteView(APIView):
                 user_profile.favorites.add(target_user)
                 return Response({"detail": "Added to favorites", "is_favorite": True}, status=status.HTTP_200_OK)
 
+                
         except CustomUser.DoesNotExist:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -784,3 +792,17 @@ class PasswordResetVerifyView(APIView):
         cache.delete(f"password_reset:{email}")
 
         return Response({"detail": "Password has been reset successfully. You can now log in."}, status=status.HTTP_200_OK)
+class FamilyMemberView(generics.ListCreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FamilyMemberSerializer
+
+    def get_queryset(self):
+        # Return family members for the currently authenticated user's profile
+        if hasattr(self.request.user, 'profile'):
+            return self.request.user.profile.family_members.all()
+        return FamilyMember.objects.none()
+
+    def perform_create(self, serializer):
+        # Create a profile if it somehow doesn't exist
+        profile, _ = UserProfile.objects.get_or_create(user=self.request.user)
+        serializer.save(profile=profile)
