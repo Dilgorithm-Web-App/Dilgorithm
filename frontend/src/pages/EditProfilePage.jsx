@@ -27,6 +27,21 @@ const adaptProfileToForm = (data) => ({
     dateOfBirth: data.dateOfBirth || '',
 });
 
+function formatProfileSaveError(err) {
+    const d = err.response?.data;
+    if (!d) return err.message || 'Failed to save.';
+    if (typeof d === 'string') return d;
+    if (typeof d.detail === 'string') return d.detail;
+    if (Array.isArray(d.detail)) return d.detail.join(' ');
+    const parts = [];
+    for (const [k, v] of Object.entries(d)) {
+        if (Array.isArray(v)) parts.push(`${k}: ${v.join(' ')}`);
+        else if (v != null && typeof v === 'object') parts.push(`${k}: ${JSON.stringify(v)}`);
+        else if (typeof v === 'string') parts.push(`${k}: ${v}`);
+    }
+    return parts.length ? parts.join(' ') : 'Failed to save.';
+}
+
 export const EditProfilePage = () => {
     const navigate = useNavigate();
     const [form, setForm] = useState({
@@ -90,6 +105,10 @@ export const EditProfilePage = () => {
 
     const save = async (e) => {
         e.preventDefault();
+        if (!form.dateOfBirth?.trim()) {
+            setStatus('Date of birth is required.');
+            return;
+        }
         setPageState(pageState.toSaving());
         setStatus('');
         try {
@@ -101,7 +120,7 @@ export const EditProfilePage = () => {
             eventBus.publish('profile.saved', { form });
             setTimeout(() => navigate('/settings'), 1200);
         } catch (err) {
-            setStatus(err.response?.data?.detail || 'Failed to save.');
+            setStatus(formatProfileSaveError(err));
             setPageState(PageState.error('Failed to save.'));
         }
     };
@@ -163,6 +182,7 @@ export const EditProfilePage = () => {
                             type="date"
                             value={form.dateOfBirth}
                             onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                            required
                         />
                     </div>
 

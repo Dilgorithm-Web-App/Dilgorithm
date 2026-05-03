@@ -18,10 +18,12 @@ import urllib.parse
 import urllib.request
 from .models import (
     BlockedUser,
+    ChatGroupMember,
     ChatMessage,
     CustomUser,
     FamilyConnection,
     FamilyMember,
+    GroupChatMessage,
     Interest,
     Report,
     UserProfile,
@@ -34,12 +36,19 @@ from .serializers import (
     ChatMessageSerializer,
     ChatContactSerializer,
     FamilyConnectionSerializer,
+    GroupChatMessageSerializer,
     ReportSerializer,
     BlockedUserSerializer,
     FamilyMemberSerializer,
 )
 from .ai_engine import get_ranked_matches
 from .match_storage import replace_match_recommendations
+from .services.chat_message_service import create_chat_message
+from .services.group_chat_service import (
+    create_family_group_chat,
+    create_group_chat_message,
+    get_group_if_member,
+)
 # ---- Design Patterns (Singleton, Observer, Factory, State) ----
 from .patterns import (
     event_bus,                # Observer pattern
@@ -49,25 +58,6 @@ from .patterns import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Expanded profanity word list for content moderation
-# ---------------------------------------------------------------------------
-PROFANITY_LIST = [
-    "badword1", "badword2", "hate", "scam", "fraud", "abuse", "threat",
-    "harass", "stalk", "racist", "sexist", "slur", "damn", "crap", "idiot",
-    "stupid", "moron", "loser", "jerk", "creep", "pervert", "kill", "die",
-    "rape", "molest", "attack", "bomb", "terror", "porn", "nude", "naked",
-    "prostitut", "escort", "drug", "cocaine", "heroin", "meth", "weed",
-    "gambling", "bitcoin", "crypto", "invest", "ponzi", "phishing", "malware",
-    "virus", "hack", "spam", "fake", "catfish",
-]
-
-
-def is_message_clean(message):
-    lower_msg = message.lower()
-    return not any(word in lower_msg for word in PROFANITY_LIST)
 
 
 # ---------------------------------------------------------------------------
@@ -625,21 +615,10 @@ class ChatMessagesView(APIView):
         if contact.id in blocked_ids:
             return Response({"detail": "Cannot send messages to this user."}, status=status.HTTP_403_FORBIDDEN)
 
-        message = (request.data.get("message") or "").strip()
-        if not message:
-            return Response({"detail": "Message cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+        chat_message, err = create_chat_message(request.user, contact, request.data.get("message"))
+        if err:
+            return Response({"detail": err}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not is_message_clean(message):
-            return Response(
-                {"detail": "Message blocked: Violates community guidelines."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        chat_message = ChatMessage.objects.create(
-            sender=request.user,
-            recipient=contact,
-            message=message,
-        )
         serializer = ChatMessageSerializer(chat_message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -712,6 +691,117 @@ class AvailableFiltersView(APIView):
             "education": ["High School", "Bachelors", "Masters", "PhD", "Other"],
         }
         return Response(filters, status=status.HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# Group chat (family room from 1:1 chat)
+# ---------------------------------------------------------------------------
+class CreateFamilyGroupChatView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        contact_user_id = request.data.get('contact_user_id')
+        email = (request.data.get('email') or '').strip()
+        role = request.data.get('role', 'Family Member')
+
+        if not contact_user_id or not email:
+            return Response(
+                {"detail": "contact_user_id and email are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            contact = CustomUser.objects.get(id=int(contact_user_id))
+        except (ValueError, TypeError, CustomUser.DoesNotExist):
+            return Response({"detail": "Contact not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if contact.id == request.user.id:
+            return Response({"detail": "Invalid contact."}, status=status.HTTP_400_BAD_REQUEST)
+
+        blocked_ids = get_blocked_ids(request.user)
+        if contact.id in blocked_ids:
+            return Response({"detail": "Cannot create a group with a blocked user."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            third = CustomUser.objects.get(email__iexact=email)
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "User with this email not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if third.id == request.user.id:
+            return Response({"detail": "Cannot add yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+        group, err = create_family_group_chat(request.user, contact, third)
+        if err:
+            return Response({"detail": err}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not FamilyConnection.objects.filter(user=request.user, linkedMember=third).exists():
+            FamilyConnection.objects.create(
+                user=request.user,
+                linkedMember=third,
+                memberRole=role,
+                permissions={"can_view_matches": True, "can_chat": True},
+            )
+
+        return Response(
+            {
+                "detail": "Group chat ready.",
+                "group_id": group.id,
+                "roomName": f"group_{group.id}",
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class GroupChatListView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        memberships = ChatGroupMember.objects.filter(user=request.user).select_related('group')
+        out = []
+        for m in memberships:
+            g = m.group
+            other_members = (
+                ChatGroupMember.objects.filter(group=g)
+                .exclude(user=request.user)
+                .select_related('user', 'user__profile')
+            )
+            names = []
+            for om in other_members:
+                u = om.user
+                try:
+                    names.append(u.profile.fullName or u.username or u.email)
+                except Exception:
+                    names.append(u.username or u.email)
+            last = GroupChatMessage.objects.filter(group=g).order_by('-createdAt').first()
+            preview = last.message[:60] if last else 'Start the group conversation'
+            out.append({
+                'id': g.id,
+                'roomName': f'group_{g.id}',
+                'fullName': ', '.join(names) if names else f'Group {g.id}',
+                'status': preview,
+                'isGroup': True,
+            })
+        return Response(out)
+
+
+class GroupChatMessagesView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, group_id, *args, **kwargs):
+        group = get_group_if_member(request.user, group_id)
+        if not group:
+            return Response({"detail": "Group not found."}, status=status.HTTP_404_NOT_FOUND)
+        msgs = GroupChatMessage.objects.filter(group=group).select_related('sender', 'sender__profile')
+        return Response(GroupChatMessageSerializer(msgs, many=True).data)
+
+    def post(self, request, group_id, *args, **kwargs):
+        group = get_group_if_member(request.user, group_id)
+        if not group:
+            return Response({"detail": "Group not found."}, status=status.HTTP_404_NOT_FOUND)
+        gm, err = create_group_chat_message(request.user, group, request.data.get('message'))
+        if err:
+            return Response({"detail": err}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(GroupChatMessageSerializer(gm).data, status=status.HTTP_201_CREATED)
 
 
 # ---------------------------------------------------------------------------

@@ -55,6 +55,18 @@
     flex-shrink: 0;
     overflow: hidden;
     background: #e8e4e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cl-avatar--group {
+    background: #ede7f6;
+}
+
+.cl-avatar-emoji {
+    font-size: 22px;
+    line-height: 1;
 }
 
 .cl-avatar-img {

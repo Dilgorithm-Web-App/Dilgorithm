@@ -5,6 +5,7 @@ from .models import (
     CustomUser,
     FamilyConnection,
     FamilyMember,
+    GroupChatMessage,
     Interest,
     Report,
     BlockedUser,
@@ -99,7 +100,28 @@ class UserProfileSerializer(serializers.ModelSerializer):
         imgs = instance.images_as_list()
         data['images'] = imgs
         data['profileImage'] = imgs[0] if imgs else None
+        data['userId'] = instance.user_id
         return data
+
+
+class GroupChatMessageSerializer(serializers.ModelSerializer):
+    """Same wire shape as ChatMessageSerializer (recipientId null for groups)."""
+
+    senderId = serializers.IntegerField(source='sender.id', read_only=True)
+    recipientId = serializers.SerializerMethodField()
+    senderName = serializers.SerializerMethodField()
+    groupId = serializers.IntegerField(source='group.id', read_only=True)
+
+    class Meta:
+        model = GroupChatMessage
+        fields = ('id', 'senderId', 'recipientId', 'senderName', 'message', 'createdAt', 'groupId')
+
+    def get_recipientId(self, obj):
+        return None
+
+    def get_senderName(self, obj):
+        profile_name = getattr(getattr(obj.sender, 'profile', None), 'fullName', None)
+        return profile_name or obj.sender.username or obj.sender.email
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):

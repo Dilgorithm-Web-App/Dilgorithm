@@ -6,19 +6,36 @@ import './ChatListPage.css';
 
 export const ChatListPage = () => {
     const navigate = useNavigate();
-    const [contacts, setContacts] = useState([]);
+    const [rows, setRows] = useState([]);
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const loadContacts = async () => {
+        const load = async () => {
             try {
-                const { data } = await api.get('accounts/chat/contacts/');
-                setContacts(Array.isArray(data) ? data : []);
-            } catch (e) {
-                setError('Could not load contacts.');
+                const [cRes, gRes] = await Promise.all([
+                    api.get('accounts/chat/contacts/'),
+                    api.get('accounts/chat/groups/'),
+                ]);
+                const contacts = Array.isArray(cRes.data) ? cRes.data : [];
+                const groups = Array.isArray(gRes.data) ? gRes.data : [];
+                const direct = contacts.map((c) => ({
+                    ...c,
+                    isGroup: false,
+                    key: `u-${c.id}`,
+                    targetRoom: `room_${c.id}`,
+                }));
+                const gRows = groups.map((g) => ({
+                    ...g,
+                    isGroup: true,
+                    key: `g-${g.id}`,
+                    targetRoom: g.roomName || `group_${g.id}`,
+                }));
+                setRows([...gRows, ...direct]);
+            } catch {
+                setError('Could not load conversations.');
             }
         };
-        loadContacts();
+        load();
     }, []);
 
     return (
@@ -29,33 +46,31 @@ export const ChatListPage = () => {
                 {error ? <p className="cl-error">{error}</p> : null}
 
                 <div className="cl-list">
-                    {contacts.map((contact) => (
-                        <button
-                            key={contact.id}
-                            className="cl-item"
-                            onClick={() => navigate(`/chat/room_${contact.id}`)}
-                        >
-                            <div className="cl-avatar">
-                                <img
-                                    src={getProfilePhotoImgSrc(
-                                        contact.images?.length
-                                            ? contact.images
-                                            : contact.profileImage
-                                              ? [contact.profileImage]
-                                              : [],
-                                    )}
-                                    alt=""
-                                    className="cl-avatar-img"
-                                />
+                    {rows.map((row) => (
+                        <button key={row.key} className="cl-item" onClick={() => navigate(`/chat/${row.targetRoom}`)}>
+                            <div className={`cl-avatar ${row.isGroup ? 'cl-avatar--group' : ''}`}>
+                                {row.isGroup ? (
+                                    <span className="cl-avatar-emoji" aria-hidden>
+                                        👥
+                                    </span>
+                                ) : (
+                                    <img
+                                        src={getProfilePhotoImgSrc(
+                                            row.images?.length ? row.images : row.profileImage ? [row.profileImage] : [],
+                                        )}
+                                        alt=""
+                                        className="cl-avatar-img"
+                                    />
+                                )}
                             </div>
                             <div className="cl-meta">
-                                <div className="cl-name">{contact.fullName || contact.username || contact.email}</div>
-                                <div className="cl-status">{contact.status}</div>
+                                <div className="cl-name">{row.fullName || row.username || row.email}</div>
+                                <div className="cl-status">{row.status}</div>
                             </div>
                             <span className="cl-arrow">›</span>
                         </button>
                     ))}
-                    {!error && contacts.length === 0 ? <p className="cl-empty">No contacts available yet.</p> : null}
+                    {!error && rows.length === 0 ? <p className="cl-empty">No conversations yet.</p> : null}
                 </div>
             </div>
         </div>
