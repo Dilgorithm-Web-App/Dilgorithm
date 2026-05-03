@@ -1,16 +1,23 @@
 """
 SRP: chat validation + persistence shared by REST and WebSocket (OCP: extend rules here).
 """
+from ..content_moderation import PROFANITY_REJECTION_DETAIL, is_message_clean
 from ..models import ChatMessage, CustomUser
+from .blocked_user_service import get_blocked_ids
 
-PROFANITY_LIST = ("badword1", "badword2", "hate", "scam")
+BLOCKED_CHAT_DETAIL = "This user is blocked or has blocked you. Messaging is not allowed."
 
 
 def get_contact_user(for_user: CustomUser, contact_id: int) -> CustomUser | None:
-    """Recipient exists and is not the requesting user (aligned with ChatMessagesView)."""
+    """Recipient exists, not self, and not blocked (either direction — same as ChatMessagesView)."""
     if not contact_id or contact_id == for_user.id:
         return None
-    return CustomUser.objects.filter(id=contact_id).exclude(id=for_user.id).first()
+    contact = CustomUser.objects.filter(id=contact_id).exclude(id=for_user.id).first()
+    if not contact:
+        return None
+    if contact.id in get_blocked_ids(for_user):
+        return None
+    return contact
 
 
 def validate_chat_text(text) -> tuple[str | None, str | None]:
@@ -18,14 +25,15 @@ def validate_chat_text(text) -> tuple[str | None, str | None]:
     message = (text or "").strip()
     if not message:
         return None, "Message cannot be empty."
-    lower_msg = message.lower()
-    if any(word in lower_msg for word in PROFANITY_LIST):
-        return None, "Message blocked: Violates community guidelines."
+    if not is_message_clean(message):
+        return None, PROFANITY_REJECTION_DETAIL
     return message, None
 
 
 def create_chat_message(sender: CustomUser, recipient: CustomUser, text) -> tuple[ChatMessage | None, str | None]:
     """Returns (ChatMessage, error_detail)."""
+    if recipient.id in get_blocked_ids(sender):
+        return None, BLOCKED_CHAT_DETAIL
     message, err = validate_chat_text(text)
     if err:
         return None, err

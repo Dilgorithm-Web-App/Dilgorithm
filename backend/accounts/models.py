@@ -173,6 +173,46 @@ class ChatMessage(models.Model):
     def __str__(self):
         return f"{self.sender.email} -> {self.recipient.email}"
 
+
+class ChatGroup(models.Model):
+    """Multi-user chat room (e.g. family group from 1:1 chat)."""
+
+    createdAt = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="chat_groups_created"
+    )
+
+    def __str__(self):
+        return f"ChatGroup {self.pk}"
+
+
+class ChatGroupMember(models.Model):
+    group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE, related_name="memberships")
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="chat_group_memberships")
+    joinedAt = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["group", "user"], name="unique_chat_group_member"),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} in group {self.group_id}"
+
+
+class GroupChatMessage(models.Model):
+    group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="group_messages_sent")
+    message = models.TextField()
+    createdAt = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["createdAt"]
+
+    def __str__(self):
+        return f"{self.sender.email} in group {self.group_id}"
+
+
 class FamilyMember(models.Model):
     profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='family_members')
     relationship = models.CharField(max_length=50) # e.g., Father, Mother, Sibling
