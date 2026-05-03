@@ -3,10 +3,12 @@
 
 Dilgorithm is a full-stack web application designed to connect users based on deep compatibility. Utilizing an intelligent matching engine, real-time WebSockets, and a robust AI preference system, Dilgorithm calculates percentage-based matches and allows users to communicate instantly in a secure, filtered environment.
 
-## ✨ Key Features
+## Key Features
 
 *   **Intelligent Match Feed:** An AI-driven engine compares user profiles, interests, and criteria to generate a dynamic feed of highly compatible partners, complete with a "Compatibility Score."
 *   **Dynamic Preferences System:** Users can define specific interests (comma-separated), religious sects, and location preferences to fine-tune their AI match results.
+*   **Family Background Profiling:** A complete integration allowing users to add and manage family details, which the AI engine uses to further enrich match compatibility.
+*   **Advanced Dynamic Filtering:** Functional frontend filters (e.g., caste, education) integrated with backend APIs, along with a transparent "Why this match" reasoning.
 *   **Real-Time Chat:** Integrated Django Channels and WebSockets enable instantaneous, bidirectional messaging between matched users.
 *   **Automated Moderation:** A built-in security layer acts as a profanity and bot filter, automatically blocking toxic messages before they reach the chat room.
 *   **Secure Authentication:** End-to-end JWT (JSON Web Token) authentication for seamless, secure login and session management.
@@ -167,6 +169,10 @@ Serve `dist/` and reverse-proxy `/api` to Django or set `VITE_API_BASE_URL` as n
 
 ### Changelog summary (recent engineering)
 
+*   **Login Page Aesthetics:** Visually enhanced and modernized the login page with a cohesive aesthetic (linear gradient background, improved typography hierarchy, standardized button layouts, refined link styling, and cleaner reCAPTCHA integration).
+*   **Dynamic Frontend Integration:** Replaced static mock data with dynamic backend integration for user interests, chat contacts, caste and education filters, and the "Why this match" logic. Connected heart/favorite buttons to backend APIs.
+*   **Family Member Feature:** End-to-end implementation including backend models, API endpoints (`/family/`), AI matching engine updates for family background considerations, and a dynamic React component (`FamilyForm.jsx`).
+*   **AI Engine Optimization:** Refined `ai_engine.py` logic to accurately calculate and rank compatibility scores, seamlessly processing user interests, partner criteria, and profile data.
 *   Registration: 2FA OTP, JWT on verify, **profile photo** step and `profile.images`.
 *   Dashboard avatar from first profile image; Preferences / About / Engagement / App configuration pages; API base URL + dev proxy.
 *   Backend: onboarding profile fields, caste, favorites, engagement summary; matching refactored through **`matching_patterns.py`**.
