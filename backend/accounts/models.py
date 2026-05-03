@@ -1,7 +1,8 @@
+import json
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-import math
 
 
 class CustomUser(AbstractUser):
@@ -44,6 +45,24 @@ class UserProfile(models.Model):
     dateOfBirth = models.DateField(null=True, blank=True)
     favorites = models.ManyToManyField(CustomUser, related_name='favorited_by', blank=True)
 
+    def images_as_list(self):
+        """SQL Server / drivers sometimes surface JSON as a str; API and UI expect a list."""
+        v = self.images
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            s = v.strip()
+            if not s:
+                return []
+            try:
+                parsed = json.loads(s)
+                return parsed if isinstance(parsed, list) else []
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
+
     @property
     def age(self):
         if not self.dateOfBirth:
@@ -54,9 +73,16 @@ class UserProfile(models.Model):
 
     @property
     def profileImage(self):
-        if self.images and isinstance(self.images, list) and len(self.images) > 0:
-            return self.images[0]
-        return None
+        imgs = self.images_as_list()
+        return imgs[0] if imgs else None
+
+    def save(self, *args, **kwargs):
+        if isinstance(self.images, str):
+            self.images = self.images_as_list()
+            uf = kwargs.get('update_fields')
+            if uf is not None and 'images' not in uf:
+                kwargs['update_fields'] = list(uf) + ['images']
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Profile of {self.user.email}"

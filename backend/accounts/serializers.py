@@ -30,7 +30,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class MatchFeedSerializer(serializers.ModelSerializer):
     fullName = serializers.CharField(source='profile.fullName', read_only=True)
     bio = serializers.CharField(source='profile.bio', read_only=True)
-    images = serializers.JSONField(source='profile.images', read_only=True)
+    images = serializers.SerializerMethodField()
     profileImage = serializers.CharField(source='profile.profileImage', read_only=True)
     location = serializers.CharField(source='profile.location', read_only=True)
     sect = serializers.CharField(source='profile.sect', read_only=True)
@@ -50,6 +50,10 @@ class MatchFeedSerializer(serializers.ModelSerializer):
             'location', 'sect', 'education', 'caste', 'profession', 'maritalStatus',
             'age', 'dateOfBirth', 'is_favorite', 'is_online',
         )
+
+    def get_images(self, obj):
+        profile = getattr(obj, 'profile', None)
+        return profile.images_as_list() if profile else []
 
     def get_is_favorite(self, obj):
         request = self.context.get('request')
@@ -89,6 +93,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if not isinstance(first, str) or not first.strip():
             raise serializers.ValidationError('Profile photo is required.')
         return value
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        imgs = instance.images_as_list()
+        data['images'] = imgs
+        data['profileImage'] = imgs[0] if imgs else None
+        return data
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
@@ -141,9 +152,7 @@ class ChatContactSerializer(serializers.ModelSerializer):
 
     def get_images(self, obj):
         profile = getattr(obj, 'profile', None)
-        if profile and isinstance(getattr(profile, 'images', None), list):
-            return profile.images
-        return []
+        return profile.images_as_list() if profile else []
 
     def get_status(self, obj):
         request = self.context.get('request')

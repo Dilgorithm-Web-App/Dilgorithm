@@ -34,6 +34,7 @@ export const SearchPage = () => {
     const [filtered, setFiltered] = useState([]);
     const [filterState, setFilterState] = useState({ location: '', sect: '', caste: '', education: '' });
     const [favorites, setFavorites] = useState(new Set());
+    const [loadError, setLoadError] = useState('');
     const navigate = useNavigate();
 
     const { data: catalogData, loading: catalogLoading, error: catalogError } = useCatalogMetadata();
@@ -51,15 +52,37 @@ export const SearchPage = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoadError('');
+            if (!localStorage.getItem('access_token')) {
+                setLoadError('You need to be logged in to search.');
+                return;
+            }
             try {
-                const res = await api.get('accounts/feed/');
-                const data = Array.isArray(res.data) ? res.data : [];
+                const res = await api.get('accounts/search/users/', { params: { limit: 500 } });
+                const raw = res.data;
+                const data = Array.isArray(raw) ? raw : Array.isArray(raw?.results) ? raw.results : [];
+                if (!Array.isArray(raw) && !Array.isArray(raw?.results)) {
+                    console.warn('Unexpected search API shape', raw);
+                }
                 setFavorites(createFavoritesSetFromFeedRows(data));
                 const adapted = data.map(adaptFeedProfile);
                 setProfiles(adapted);
                 setFiltered(adapted);
             } catch (e) {
                 console.error(e);
+                const status = e.response?.status;
+                const detail = e.response?.data?.detail;
+                if (status === 401 || status === 403) {
+                    setLoadError('Session expired or not allowed. Log in again and retry.');
+                } else if (status === 404) {
+                    setLoadError('Search API not found. Restart the backend and confirm it includes search/users/.');
+                } else {
+                    setLoadError(
+                        typeof detail === 'string'
+                            ? detail
+                            : 'Could not load profiles. Check that the backend is running and you are logged in.',
+                    );
+                }
             }
         };
         fetchData();
@@ -125,12 +148,17 @@ export const SearchPage = () => {
                 <input
                     className="sp-input"
                     type="text"
-                    placeholder="Search profiles with names or IDs..."
+                    placeholder="Search by name, email, username, or user id…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                 />
             </div>
 
+            {loadError ? (
+                <p className="sp-banner sp-banner--warn" role="alert">
+                    {loadError}
+                </p>
+            ) : null}
             {catalogError ? (
                 <p className="sp-banner sp-banner--warn" role="alert">
                     Filters could not be loaded; narrow results with search only.
