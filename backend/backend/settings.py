@@ -95,7 +95,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'mssql',
         'NAME': 'DilgorithmDB',
-        'HOST': r'DESKTOP-3O20B06\SQLEXPRESS',
+        'HOST': r'ARC\SQLEXPRESS',
         'PORT': '',
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
