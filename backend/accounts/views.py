@@ -12,6 +12,7 @@ from django.core.mail import send_mail
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import json
+import logging
 import random
 import urllib.parse
 import urllib.request
@@ -45,6 +46,8 @@ from .patterns import (
     AccountStateMachine,      # State pattern
     notification_service,     # Singleton pattern
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -274,6 +277,7 @@ class RegisterInit2FAView(APIView):
                 fail_silently=False,
             )
         except Exception:
+            logger.exception("Registration OTP email failed (check Mailtrap SMTP in backend/.env)")
             return Response(
                 {
                     "detail": "Could not send OTP email. Check SMTP settings in backend/.env and try again."
@@ -791,7 +795,13 @@ class PasswordResetRequestView(APIView):
 
         user = CustomUser.objects.filter(email=email).first()
         if not user:
-            # Don't reveal whether the email exists
+            # Don't reveal whether the email exists to the client
+            if settings.DEBUG:
+                logger.info(
+                    "Password reset: no local user for %r — no email sent. "
+                    "Use an email that exists in this machine's database.",
+                    email,
+                )
             return Response({"detail": "If an account with this email exists, a reset code has been sent."}, status=status.HTTP_200_OK)
 
         otp = f"{random.randint(0, 999999):06d}"
@@ -806,8 +816,11 @@ class PasswordResetRequestView(APIView):
                 fail_silently=False,
             )
         except Exception:
+            logger.exception("Password reset email failed (check Mailtrap SMTP in backend/.env)")
             return Response(
-                {"detail": "Could not send reset email. Try again later."},
+                {
+                    "detail": "Could not send reset email. Check SMTP (Mailtrap) settings in backend/.env and try again."
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

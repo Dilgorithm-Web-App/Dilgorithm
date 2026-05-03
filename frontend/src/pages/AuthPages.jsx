@@ -519,10 +519,11 @@ export const RegisterCredentials2FA = () => {
 
     const verifyOtp = async (e) => {
         e.preventDefault();
+        const otpTrimmed = otp.trim();
         try {
             const { data } = await api.post('accounts/register/verify-2fa/', {
-                email,
-                otp,
+                email: email.trim().toLowerCase(),
+                otp: otpTrimmed,
             });
             if (data.access) {
                 setSession(data.access, data.refresh, { email: data.email });
@@ -531,7 +532,18 @@ export const RegisterCredentials2FA = () => {
                 navigate('/login');
             }
         } catch (error) {
-            setStatusMessage(error.response?.data?.detail || 'OTP verification failed.');
+            const d = error.response?.data;
+            let msg = 'OTP verification failed.';
+            if (d) {
+                if (typeof d.detail === 'string') msg = d.detail;
+                else if (Array.isArray(d.detail)) msg = d.detail.join(' ');
+                else if (d.detail && typeof d.detail === 'object') msg = JSON.stringify(d.detail);
+                else {
+                    const key = Object.keys(d).find((k) => Array.isArray(d[k]));
+                    if (key) msg = `${key}: ${d[key].join(' ')}`;
+                }
+            }
+            setStatusMessage(msg);
         }
     };
 
