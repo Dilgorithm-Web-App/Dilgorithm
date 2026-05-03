@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useMemo, useCallback, useContext } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
-import { AuthContext } from '../AuthContext';
 import { getProfilePhotoImgSrc } from '../utils/profileImageSrc';
 import { useChatWebSocket } from '../chat/useChatWebSocket';
 import { ConnectionState } from '../chat/ws/connectionState';
@@ -9,7 +8,6 @@ import './Chat.css';
 
 export const Chat = () => {
     const { roomName } = useParams();
-    const { user } = useContext(AuthContext);
     const [contacts, setContacts] = useState([]);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -31,8 +29,6 @@ export const Chat = () => {
         (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
     const headerStatus = activeContact?.status || 'Tap to chat';
     const headerPhotoSrc = getProfilePhotoImgSrc(activeContact?.images);
-
-    const accessToken = user?.token || localStorage.getItem('access_token') || '';
 
     const loadMessages = useCallback(async () => {
         if (!contactId) return;
@@ -68,8 +64,7 @@ export const Chat = () => {
 
     const { connectionState, sendText } = useChatWebSocket({
         roomName: roomName || '',
-        accessToken,
-        enabled: Boolean(contactId && roomName && accessToken),
+        enabled: Boolean(contactId && roomName),
         onMessage: onWsMessage,
         onOpen: () => {
             setError('');

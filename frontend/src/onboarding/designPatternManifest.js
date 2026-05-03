@@ -42,7 +42,7 @@ export const DESIGN_PATTERN_MANIFEST = {
     chatWebSocketStack: {
         path: 'src/chat/ws/ChatWebSocketClient.js',
         backend: 'backend/accounts/consumers.py, jwt_ws_middleware.py, services/chat_message_service.py',
-        note: 'Chat: State (connectionState), Observer (SimpleEventSubject), Composite (inboundMessageComposite), Iterator (exponentialBackoff), Adapter (adaptChatServerMessage), Factory (buildChatWebSocketUrl, chatWebSocketFactory), Singleton (chatSocketConfig). DIP: injectable WebSocket. SRP: shared chat_message_service for REST + WS.',
+        note: 'Chat: State (connectionState), Observer (SimpleEventSubject), Composite (inboundMessageComposite), Iterator (exponentialBackoff), Adapter (adaptChatServerMessage), Factory (buildChatWebSocketUrl at connect-time, chatWebSocketFactory), Singleton (one native WS per client + getLatestAccessToken in chatSocketConfig). DIP: injectable WebSocket + getToken. SRP: URL/token resolved in _resolveWebSocketUrl before each open/reconnect (no stale JWT closure).',
     },
     favoritesFeedSync: {
         path: 'src/features/favorites/favoriteIdsFromFeed.js',

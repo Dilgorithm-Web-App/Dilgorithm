@@ -27,3 +27,15 @@ export function getChatWebSocketOrigin() {
 export function resetChatWebSocketOriginForTests() {
     cachedOrigin = null;
 }
+
+/**
+ * Singleton accessor: latest JWT for WebSocket auth (reads storage at call time — never stale).
+ * DIP: inject a different `getToken` into ChatWebSocketClient for tests.
+ */
+export function getLatestAccessToken() {
+    try {
+        return localStorage.getItem('access_token') || '';
+    } catch {
+        return '';
+    }
+}
