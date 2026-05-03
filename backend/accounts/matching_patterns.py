@@ -16,6 +16,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Iterator, List, Optional, Tuple
 
+from .models import Interest
+
 
 class InterestAdapter:
     """Adapter — converts Django Interest ORM instances to a dict the scorer understands."""
@@ -118,6 +120,30 @@ class CasteFilter(CandidateQueryFilter):
         return queryset.filter(profile__caste__iexact=self.value)
 
 
+class LocationFilter(CandidateQueryFilter):
+    """Composite leaf — filters candidates by profile location (case-insensitive)."""
+
+    def __init__(self, value: Optional[str]):
+        self.value = (value or "").strip()
+
+    def apply(self, queryset):
+        if not self.value:
+            return queryset
+        return queryset.filter(profile__location__icontains=self.value)
+
+
+class SectFilter(CandidateQueryFilter):
+    """Composite leaf — filters candidates by profile sect (case-insensitive)."""
+
+    def __init__(self, value: Optional[str]):
+        self.value = (value or "").strip()
+
+    def apply(self, queryset):
+        if not self.value:
+            return queryset
+        return queryset.filter(profile__sect__icontains=self.value)
+
+
 class ProfileFilterComposite(CandidateQueryFilter):
     """Composite — apply many filters as one operation."""
 
@@ -131,13 +157,42 @@ class ProfileFilterComposite(CandidateQueryFilter):
         return qs
 
 
-def build_filters_from_request(filters: Optional[dict]) -> ProfileFilterComposite:
+def build_filters_from_request(
+    filters: Optional[dict], user=None
+) -> ProfileFilterComposite:
+    """
+    Factory — builds a ProfileFilterComposite from request query params.
+
+    Preference Fallback: if the request does not include location/sect filters
+    and a *user* is provided, the user's saved ``Interest.partnerCriteria``
+    values are applied as default hard filters (DIP — depends on abstraction,
+    not on where the value originates).
+    """
     if not filters:
-        return ProfileFilterComposite([])
+        filters = {}
+
+    # --- Preference fallback for location & sect (Task 3) ---
+    location_val = filters.get("location")
+    sect_val = filters.get("sect")
+
+    if user and (not location_val or not sect_val):
+        try:
+            interest = Interest.objects.filter(user=user).first()
+            if interest:
+                criteria = interest.partnerCriteria or {}
+                if not location_val:
+                    location_val = criteria.get("location")
+                if not sect_val:
+                    sect_val = criteria.get("sect")
+        except Exception:
+            pass  # Graceful degradation — proceed without defaults
+
     return ProfileFilterComposite(
         [
             EducationFilter(filters.get("education")),
             CasteFilter(filters.get("caste")),
+            LocationFilter(location_val),
+            SectFilter(sect_val),
         ]
     )
 
