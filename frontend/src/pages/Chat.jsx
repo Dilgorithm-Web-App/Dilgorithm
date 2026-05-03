@@ -15,6 +15,10 @@ export const Chat = () => {
     const contactId = Number((roomName || '').replace('room_', ''));
 
     const [toastMsg, setToastMsg] = useState('');
+    const [familyOpen, setFamilyOpen] = useState(false);
+    const [familyEmail, setFamilyEmail] = useState('');
+    const [familyBusy, setFamilyBusy] = useState(false);
+    const [familyErr, setFamilyErr] = useState('');
     const activeContact = useMemo(
         () => contacts.find((c) => Number(c.id) === contactId),
         [contacts, contactId]
@@ -27,7 +31,8 @@ export const Chat = () => {
 
     const headerColor =
         activeIndex >= 0 ? CHAT_AVATAR_COLORS[activeIndex % CHAT_AVATAR_COLORS.length] : CHAT_AVATAR_COLORS[0];
-    const displayName = activeContact?.username || activeContact?.email || (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
+    const displayName =
+        activeContact?.fullName || activeContact?.username || activeContact?.email || (roomName ? roomName.replace(/^room_/, 'Chat ') : 'Chat');
     const headerStatus = activeContact?.status || 'Tap to chat';
 
     useEffect(() => {
@@ -65,6 +70,29 @@ export const Chat = () => {
         endRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, roomName]);
 
+    useEffect(() => {
+        if (activeContact?.email) setFamilyEmail(activeContact.email);
+    }, [activeContact?.email]);
+
+    const sendFamilyInvite = async () => {
+        const email = (familyEmail || '').trim();
+        if (!email) {
+            setFamilyErr('Enter the member’s email.');
+            return;
+        }
+        setFamilyBusy(true);
+        setFamilyErr('');
+        try {
+            await api.post('accounts/family/', { email, role: 'Family Member' });
+            setToastMsg(`Family link added for ${displayName}.`);
+            setTimeout(() => setToastMsg(''), 3000);
+            setFamilyOpen(false);
+        } catch (err) {
+            setFamilyErr(err.response?.data?.detail || 'Could not add family member.');
+        }
+        setFamilyBusy(false);
+    };
+
     const send = (e) => {
         e.preventDefault();
         const text = input.trim();
@@ -83,6 +111,36 @@ export const Chat = () => {
 
     return (
         <div className="ch-layout">
+            {familyOpen && (
+                <div className="ch-modal-overlay" role="presentation" onClick={() => !familyBusy && setFamilyOpen(false)}>
+                    <div className="ch-modal" role="dialog" aria-labelledby="ch-family-title" onClick={(e) => e.stopPropagation()}>
+                        <h3 id="ch-family-title" className="ch-modal-title">
+                            Add family member
+                        </h3>
+                        <p className="ch-modal-hint">They must already have a Dilgorithm account with this email.</p>
+                        <label className="ch-modal-label" htmlFor="ch-family-email">
+                            Email
+                        </label>
+                        <input
+                            id="ch-family-email"
+                            className="ch-modal-input"
+                            type="email"
+                            value={familyEmail}
+                            onChange={(e) => setFamilyEmail(e.target.value)}
+                            disabled={familyBusy}
+                        />
+                        {familyErr ? <p className="ch-modal-err">{familyErr}</p> : null}
+                        <div className="ch-modal-actions">
+                            <button type="button" className="ch-modal-btn ch-modal-btn--ghost" disabled={familyBusy} onClick={() => setFamilyOpen(false)}>
+                                Cancel
+                            </button>
+                            <button type="button" className="ch-modal-btn ch-modal-btn--primary" disabled={familyBusy} onClick={sendFamilyInvite}>
+                                {familyBusy ? 'Saving…' : 'Add'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="ch-contacts">
                 <h4 className="ch-contacts-title">Messages</h4>
                 {contacts.map((c, i) => (
@@ -99,8 +157,17 @@ export const Chat = () => {
                             }
                         }}
                     >
-                        <div className="ch-contact-av" style={{ background: CHAT_AVATAR_COLORS[i % CHAT_AVATAR_COLORS.length] }}>
-                            {(c.username || c.email || 'U')[0]?.toUpperCase()}
+                        <div
+                            className="ch-contact-av"
+                            style={{
+                                background: c.profileImage ? 'transparent' : CHAT_AVATAR_COLORS[i % CHAT_AVATAR_COLORS.length],
+                            }}
+                        >
+                            {c.profileImage ? (
+                                <img className="ch-contact-av-img" src={c.profileImage} alt="" />
+                            ) : (
+                                (c.username || c.email || 'U')[0]?.toUpperCase()
+                            )}
                         </div>
                         <div className="ch-contact-info">
                             <div className="ch-contact-name">{c.username || c.email}</div>
@@ -123,20 +190,29 @@ export const Chat = () => {
                                 <path d="M19 12H5M12 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <div className="ch-header-av" style={{ background: headerColor }}>
-                            {displayName[0]?.toUpperCase() || 'U'}
+                        <div
+                            className="ch-header-av"
+                            style={{
+                                background: activeContact?.profileImage ? 'transparent' : headerColor,
+                            }}
+                        >
+                            {activeContact?.profileImage ? (
+                                <img className="ch-header-av-img" src={activeContact.profileImage} alt="" />
+                            ) : (
+                                displayName[0]?.toUpperCase() || 'U'
+                            )}
                         </div>
                         <div>
                             <div className="ch-header-name">{displayName}</div>
                             <div className="ch-header-status">{headerStatus}</div>
                         </div>
                     </div>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         className="ch-add-family"
                         onClick={() => {
-                            setToastMsg(`Family invite sent to ${displayName}!`);
-                            setTimeout(() => setToastMsg(''), 3000);
+                            setFamilyErr('');
+                            setFamilyOpen(true);
                         }}
                     >
                         ADD FAMILY

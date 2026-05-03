@@ -35,11 +35,20 @@ export const ChatListPage = () => {
                             className="cl-item"
                             onClick={() => navigate(`/chat/room_${contact.id}`)}
                         >
-                            <div className="cl-avatar" style={{ background: CHAT_AVATAR_COLORS[i % CHAT_AVATAR_COLORS.length] }}>
-                                {(contact.username || contact.email || 'U')[0]?.toUpperCase()}
+                            <div
+                                className="cl-avatar"
+                                style={{
+                                    background: contact.profileImage ? 'transparent' : CHAT_AVATAR_COLORS[i % CHAT_AVATAR_COLORS.length],
+                                }}
+                            >
+                                {contact.profileImage ? (
+                                    <img className="cl-avatar-img" src={contact.profileImage} alt="" />
+                                ) : (
+                                    (contact.username || contact.email || 'U')[0]?.toUpperCase()
+                                )}
                             </div>
                             <div className="cl-meta">
-                                <div className="cl-name">{contact.username || contact.email}</div>
+                                <div className="cl-name">{contact.fullName || contact.username || contact.email}</div>
                                 <div className="cl-status">{contact.status}</div>
                             </div>
                             <span className="cl-arrow">›</span>

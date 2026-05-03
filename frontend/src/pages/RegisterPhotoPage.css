@@ -5,7 +5,7 @@
   justify-content: center;
   padding: 32px 20px;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #fff1f2 0%, #fdf2f8 45%, #faf5ff 100%);
+  background: transparent;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 

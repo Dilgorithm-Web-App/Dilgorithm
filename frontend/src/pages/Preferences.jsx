@@ -53,6 +53,9 @@ export const Preferences = () => {
                 <button type="button" className="pref-back" onClick={() => navigate('/settings')}>
                     Back
                 </button>
+                <button type="button" className="pref-mini-link" onClick={() => navigate('/edit-profile')}>
+                    Edit photo & bio
+                </button>
                 <h1 className="pref-title">Set Your Preferences</h1>
                 <p className="pref-sub">Help the Dilgorithm AI find your perfect match.</p>
 
@@ -111,7 +114,7 @@ export const Preferences = () => {
                         <button
                             type="button"
                             className="pref-btn pref-btn--profile"
-                            onClick={() => window.location.assign('/figma-import/slide1.html')}
+                            onClick={() => navigate('/edit-profile')}
                         >
                             Edit profile
                         </button>

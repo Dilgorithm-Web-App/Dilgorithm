@@ -119,8 +119,12 @@ export const SearchPage = () => {
                 <div className="sp-grid">
                     {filtered.map((p, i) => (
                         <div key={p.id} className="sp-profile-card" style={{ animationDelay: `${i * .06}s` }}>
-                            <div className="sp-profile-photo" style={{ background: COLORS[i % 4] }}>
-                                <span className="sp-profile-initial">{(p.fullName || p.username || 'U')[0].toUpperCase()}</span>
+                            <div className="sp-profile-photo" style={{ background: p.profileImage ? undefined : COLORS[i % 4] }}>
+                                {p.profileImage ? (
+                                    <img className="sp-profile-photo-img" src={p.profileImage} alt="" />
+                                ) : (
+                                    <span className="sp-profile-initial">{(p.fullName || p.username || 'U')[0].toUpperCase()}</span>
+                                )}
                                 <button className="sp-heart-btn" onClick={() => toggleFavorite(p.id)} style={{ color: favorites.has(p.id) ? '#E57373' : 'inherit' }}>
                                     {favorites.has(p.id) ? '♥' : '♡'}
                                 </button>
@@ -135,7 +139,7 @@ export const SearchPage = () => {
                                         <span className="sp-compat-tag sp-compat-tag--red">{p.compatibility_score}%</span>
                                     </div>
                                 )}
-                                <button className="sp-view-btn" onClick={() => navigate(`/chat/room_${p.id}`)}>View Profile</button>
+                                <button className="sp-view-btn" onClick={() => navigate(`/profile/${p.id}`)}>View Profile</button>
                             </div>
                         </div>
                     ))}

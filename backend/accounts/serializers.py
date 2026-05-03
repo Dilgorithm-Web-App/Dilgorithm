@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Q
-from .models import CustomUser, Interest, UserProfile, FamilyConnection
-from .models import ChatMessage
+from .models import CustomUser, Interest, UserProfile, FamilyConnection, ChatMessage, Report, BlockedUser
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
@@ -18,19 +18,30 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
+
 class MatchFeedSerializer(serializers.ModelSerializer):
     fullName = serializers.CharField(source='profile.fullName', read_only=True)
     bio = serializers.CharField(source='profile.bio', read_only=True)
     images = serializers.JSONField(source='profile.images', read_only=True)
+    profileImage = serializers.CharField(source='profile.profileImage', read_only=True)
     location = serializers.CharField(source='profile.location', read_only=True)
     sect = serializers.CharField(source='profile.sect', read_only=True)
     education = serializers.CharField(source='profile.education', read_only=True)
     caste = serializers.CharField(source='profile.caste', read_only=True)
+    profession = serializers.CharField(source='profile.profession', read_only=True)
+    maritalStatus = serializers.CharField(source='profile.maritalStatus', read_only=True)
+    age = serializers.IntegerField(source='profile.age', read_only=True)
+    dateOfBirth = serializers.DateField(source='profile.dateOfBirth', read_only=True)
     is_favorite = serializers.SerializerMethodField()
-    
+    is_online = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = CustomUser
-        fields = ('id', 'email', 'fullName', 'bio', 'images', 'location', 'sect', 'education', 'caste', 'is_favorite')
+        fields = (
+            'id', 'email', 'username', 'fullName', 'bio', 'images', 'profileImage',
+            'location', 'sect', 'education', 'caste', 'profession', 'maritalStatus',
+            'age', 'dateOfBirth', 'is_favorite', 'is_online',
+        )
 
     def get_is_favorite(self, obj):
         request = self.context.get('request')
@@ -41,6 +52,7 @@ class MatchFeedSerializer(serializers.ModelSerializer):
                 return False
         return False
 
+
 class InterestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Interest
@@ -48,19 +60,15 @@ class InterestSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    age = serializers.IntegerField(read_only=True)
+    profileImage = serializers.CharField(read_only=True)
+
     class Meta:
         model = UserProfile
         fields = (
-            'fullName',
-            'bio',
-            'images',
-            'identityDocs',
-            'profession',
-            'education',
-            'location',
-            'maritalStatus',
-            'sect',
-            'caste',
+            'fullName', 'bio', 'images', 'profileImage', 'identityDocs',
+            'profession', 'education', 'location', 'maritalStatus',
+            'sect', 'caste', 'dateOfBirth', 'age',
         )
 
 
@@ -79,12 +87,27 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
 
 class ChatContactSerializer(serializers.ModelSerializer):
+    fullName = serializers.SerializerMethodField()
+    profileImage = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     roomName = serializers.SerializerMethodField()
+    is_online = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email', 'status', 'roomName')
+        fields = ('id', 'username', 'email', 'fullName', 'profileImage', 'status', 'roomName', 'is_online')
+
+    def get_fullName(self, obj):
+        try:
+            return obj.profile.fullName
+        except Exception:
+            return obj.username or obj.email
+
+    def get_profileImage(self, obj):
+        try:
+            return obj.profile.profileImage
+        except Exception:
+            return None
 
     def get_status(self, obj):
         request = self.context.get('request')
@@ -106,6 +129,7 @@ class ChatContactSerializer(serializers.ModelSerializer):
     def get_roomName(self, obj):
         return f'room_{obj.id}'
 
+
 class FamilyConnectionSerializer(serializers.ModelSerializer):
     linkedMemberEmail = serializers.EmailField(source='linkedMember.email', read_only=True)
     linkedMemberName = serializers.CharField(source='linkedMember.profile.fullName', read_only=True)
@@ -113,3 +137,29 @@ class FamilyConnectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = FamilyConnection
         fields = ('id', 'linkedMember', 'linkedMemberEmail', 'linkedMemberName', 'memberRole', 'permissions')
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    reporterEmail = serializers.EmailField(source='reporter.email', read_only=True)
+    reportedEmail = serializers.EmailField(source='reportedUser.email', read_only=True)
+
+    class Meta:
+        model = Report
+        fields = ('id', 'reporter', 'reportedUser', 'reporterEmail', 'reportedEmail', 'reason', 'verdict', 'createdAt')
+        read_only_fields = ('id', 'reporter', 'verdict', 'createdAt')
+
+
+class BlockedUserSerializer(serializers.ModelSerializer):
+    blockedEmail = serializers.EmailField(source='blocked.email', read_only=True)
+    blockedUsername = serializers.CharField(source='blocked.username', read_only=True)
+    blockedName = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BlockedUser
+        fields = ('id', 'blocked', 'blockedEmail', 'blockedUsername', 'blockedName', 'createdAt')
+
+    def get_blockedName(self, obj):
+        try:
+            return obj.blocked.profile.fullName
+        except Exception:
+            return obj.blocked.username

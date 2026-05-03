@@ -5,6 +5,7 @@ from .views import (
     MatchFeedView,
     PreferencesView,
     ProfileView,
+    UserDetailView,
     AppConfigurationView,
     EngagementSummaryView,
     ChatContactsView,
@@ -17,6 +18,11 @@ from .views import (
     AvailableInterestsView,
     AvailableFiltersView,
     FamilyConnectionView,
+    ReportUserView,
+    BlockUserView,
+    BlockedUsersListView,
+    PasswordResetRequestView,
+    PasswordResetVerifyView,
 )
 
 urlpatterns = [
@@ -29,6 +35,7 @@ urlpatterns = [
     path('feed/', MatchFeedView.as_view(), name='match_feed'),
     path('preferences/', PreferencesView.as_view(), name='preferences'),
     path('profile/', ProfileView.as_view(), name='profile'),
+    path('user/<int:user_id>/', UserDetailView.as_view(), name='user_detail'),
     path('favorites/toggle/', ToggleFavoriteView.as_view(), name='toggle_favorite'),
     path('app-configuration/', AppConfigurationView.as_view(), name='app_configuration'),
     path('engagement-summary/', EngagementSummaryView.as_view(), name='engagement_summary'),
@@ -37,4 +44,9 @@ urlpatterns = [
     path('interests/available/', AvailableInterestsView.as_view(), name='available_interests'),
     path('filters/', AvailableFiltersView.as_view(), name='available_filters'),
     path('family/', FamilyConnectionView.as_view(), name='family_connections'),
+    path('report/', ReportUserView.as_view(), name='report_user'),
+    path('block/', BlockUserView.as_view(), name='block_user'),
+    path('blocked-users/', BlockedUsersListView.as_view(), name='blocked_users'),
+    path('password-reset/request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
+    path('password-reset/verify/', PasswordResetVerifyView.as_view(), name='password_reset_verify'),
 ]

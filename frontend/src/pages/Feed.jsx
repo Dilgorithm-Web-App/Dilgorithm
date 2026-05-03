@@ -61,8 +61,12 @@ export const Feed = () => {
                     <div className="fd-top3">
                         {topMatches.map((m, i) => (
                             <div key={m.id} className="fd-card" style={{ animationDelay: `${i * .1}s` }}>
-                                <div className="fd-card-photo" style={{ background: COLORS[i] }}>
-                                    <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
+                                <div className="fd-card-photo" style={{ background: m.profileImage ? undefined : COLORS[i] }}>
+                                    {m.profileImage ? (
+                                        <img className="fd-card-photo-img" src={m.profileImage} alt="" />
+                                    ) : (
+                                        <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
+                                    )}
                                     {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
                                     <button 
                                         className="fd-fav" 
@@ -81,7 +85,7 @@ export const Feed = () => {
                                         <div className="fd-reason-title">Why this match:</div>
                                         <div className="fd-reason-text">{m.match_reason || "Based on your shared interests and preferences"}</div>
                                     </div>
-                                    <button className="fd-view-btn" onClick={() => navigate(`/chat/room_${m.id}`)}>View Profile</button>
+                                    <button className="fd-view-btn" onClick={() => navigate(`/profile/${m.id}`)}>View Profile</button>
                                 </div>
                             </div>
                         ))}
@@ -97,8 +101,12 @@ export const Feed = () => {
                 <div className="fd-grid">
                     {allMatches.map((m, i) => (
                         <div key={m.id} className="fd-card" style={{ animationDelay: `${i * .06}s` }}>
-                            <div className="fd-card-photo" style={{ background: COLORS[i % 6] }}>
-                                <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
+                            <div className="fd-card-photo" style={{ background: m.profileImage ? undefined : COLORS[i % 6] }}>
+                                {m.profileImage ? (
+                                    <img className="fd-card-photo-img" src={m.profileImage} alt="" />
+                                ) : (
+                                    <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
+                                )}
                                 {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
                                 <button 
                                     className="fd-fav" 
@@ -112,7 +120,7 @@ export const Feed = () => {
                                 <h4 className="fd-card-name">{m.fullName || m.username}{m.age ? `, ${m.age}` : ''}</h4>
                                 {m.location && <p className="fd-card-meta">📍 {m.location}</p>}
                                 {m.bio && <p className="fd-card-meta">💼 {m.bio}</p>}
-                                <button className="fd-view-btn" onClick={() => navigate(`/chat/room_${m.id}`)}>View Profile</button>
+                                <button className="fd-view-btn" onClick={() => navigate(`/profile/${m.id}`)}>View Profile</button>
                             </div>
                         </div>
                     ))}
