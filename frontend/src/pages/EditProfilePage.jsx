@@ -3,8 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import './EditProfilePage.css';
 
+// ── Design Patterns ──
+import { PageState } from '../patterns/PageState';     // State
+import { eventBus } from '../patterns/EventBus';       // Observer
+// Adapter pattern — adaptOnboardingToProfilePayload already exists in onboarding;
+// here we adapt the API response into our local form shape (same concept).
+
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 
+/** Adapter pattern — compress and convert image file to base64 JPEG DTO. */
 function compressImageToJpeg(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -26,30 +33,40 @@ function compressImageToJpeg(file) {
     });
 }
 
+/** Adapter pattern — convert raw API profile data into the local edit-form shape. */
+const adaptProfileToForm = (data) => ({
+    fullName: data.fullName || '',
+    bio: data.bio || '',
+    profession: data.profession || '',
+    education: data.education || '',
+    location: data.location || '',
+    maritalStatus: data.maritalStatus || '',
+    sect: data.sect || '',
+    caste: data.caste || '',
+    dateOfBirth: data.dateOfBirth || '',
+});
+
 export const EditProfilePage = () => {
     const navigate = useNavigate();
     const [form, setForm] = useState({ fullName:'', bio:'', profession:'', education:'', location:'', maritalStatus:'', sect:'', caste:'', dateOfBirth:'' });
     const [preview, setPreview] = useState(null);
-    const [busy, setBusy] = useState(false);
+    // State pattern — manage page lifecycle
+    const [pageState, setPageState] = useState(PageState.idle());
     const [status, setStatus] = useState('');
 
     useEffect(() => {
         const load = async () => {
+            setPageState(PageState.loading());
             try {
                 const { data } = await api.get('accounts/profile/');
-                setForm({
-                    fullName: data.fullName || '',
-                    bio: data.bio || '',
-                    profession: data.profession || '',
-                    education: data.education || '',
-                    location: data.location || '',
-                    maritalStatus: data.maritalStatus || '',
-                    sect: data.sect || '',
-                    caste: data.caste || '',
-                    dateOfBirth: data.dateOfBirth || '',
-                });
+                // Adapter pattern — convert API response to form shape
+                setForm(adaptProfileToForm(data));
                 if (data.profileImage) setPreview(data.profileImage);
-            } catch { setStatus('Could not load profile.'); }
+                setPageState(PageState.loaded(data));
+            } catch {
+                setStatus('Could not load profile.');
+                setPageState(PageState.error('Could not load profile.'));
+            }
         };
         load();
     }, []);
@@ -65,18 +82,25 @@ export const EditProfilePage = () => {
 
     const save = async (e) => {
         e.preventDefault();
-        setBusy(true); setStatus('');
+        // State pattern — transition to saving state
+        setPageState(pageState.toSaving());
+        setStatus('');
         try {
             const payload = { ...form };
             if (preview) payload.images = [preview];
             await api.patch('accounts/profile/', payload);
             setStatus('Profile saved successfully!');
+            setPageState(PageState.loaded(form));
+            // Observer pattern — publish event so other components can react
+            eventBus.publish('profile.saved', { form });
             setTimeout(() => navigate('/settings'), 1200);
         } catch (err) {
             setStatus(err.response?.data?.detail || 'Failed to save.');
+            setPageState(PageState.error('Failed to save.'));
         }
-        setBusy(false);
     };
+
+    const busy = pageState.isSaving;
 
     return (
         <div className="ep-wrap">
