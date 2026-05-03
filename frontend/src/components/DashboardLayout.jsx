@@ -18,6 +18,7 @@ const PAGE_META = {
     '/app-configuration': 'Settings',
     '/about-us': 'About Us',
     '/edit-profile': 'Edit Profile',
+    '/admin': 'Admin Panel',
 };
 
 export const DashboardLayout = ({ children }) => {
@@ -25,6 +26,7 @@ export const DashboardLayout = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [avatarImgSrc, setAvatarImgSrc] = useState(() => getProfilePhotoImgSrc([]));
+    const [isStaff, setIsStaff] = useState(false);
 
     useEffect(() => {
         if (!user?.token) return undefined;
@@ -35,6 +37,7 @@ export const DashboardLayout = ({ children }) => {
                 if (cancelled) return;
                 const imgs = Array.isArray(data.images) ? data.images : [];
                 setAvatarImgSrc(getProfilePhotoImgSrc(imgs));
+                setIsStaff(Boolean(data.is_staff));
             } catch {
                 if (!cancelled) setAvatarImgSrc(getProfilePhotoImgSrc([]));
             }
@@ -76,6 +79,11 @@ export const DashboardLayout = ({ children }) => {
                 <button className={`dl-sidebar-btn ${path === '/settings' || path === '/preferences' || path === '/profile/edit' || path === '/engagement-moderation' || path === '/app-configuration' || path === '/about-us' ? 'dl-sidebar-btn--active' : ''}`} onClick={() => navigate('/settings')} title="Settings">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
+                {isStaff && (
+                    <button className={`dl-sidebar-btn ${path === '/admin' ? 'dl-sidebar-btn--active' : ''}`} onClick={() => navigate('/admin')} title="Admin Panel">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </button>
+                )}
             </aside>
 
             <div className="dl-main">

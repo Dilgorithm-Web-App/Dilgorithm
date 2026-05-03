@@ -234,3 +234,65 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = FamilyMember
         fields = ('id', 'relationship', 'occupation', 'education')
+
+
+class AdminReportSerializer(serializers.ModelSerializer):
+    """Rich serializer for admin dashboard — includes full reporter & reported user details."""
+    reporterEmail = serializers.EmailField(source='reporter.email', read_only=True)
+    reporterName = serializers.SerializerMethodField()
+    reportedEmail = serializers.EmailField(source='reportedUser.email', read_only=True)
+    reportedName = serializers.SerializerMethodField()
+    reportedUserId = serializers.IntegerField(source='reportedUser.id', read_only=True)
+    resolvedByEmail = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Report
+        fields = (
+            'id', 'reporter', 'reporterEmail', 'reporterName',
+            'reportedUser', 'reportedUserId', 'reportedEmail', 'reportedName',
+            'reason', 'verdict', 'createdAt', 'resolvedAt', 'resolvedByEmail',
+        )
+        read_only_fields = fields
+
+    def get_reporterName(self, obj):
+        try:
+            return obj.reporter.profile.fullName
+        except Exception:
+            return obj.reporter.username
+
+    def get_reportedName(self, obj):
+        try:
+            return obj.reportedUser.profile.fullName
+        except Exception:
+            return obj.reportedUser.username
+
+    def get_resolvedByEmail(self, obj):
+        return obj.resolvedBy.email if obj.resolvedBy else None
+
+
+class AdminBlockedUserSerializer(serializers.ModelSerializer):
+    """System-wide block list serializer for admin dashboard."""
+    blockerEmail = serializers.EmailField(source='blocker.email', read_only=True)
+    blockerName = serializers.SerializerMethodField()
+    blockedEmail = serializers.EmailField(source='blocked.email', read_only=True)
+    blockedName = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BlockedUser
+        fields = (
+            'id', 'blocker', 'blockerEmail', 'blockerName',
+            'blocked', 'blockedEmail', 'blockedName', 'createdAt',
+        )
+        read_only_fields = fields
+
+    def get_blockerName(self, obj):
+        try:
+            return obj.blocker.profile.fullName
+        except Exception:
+            return obj.blocker.username
+
+    def get_blockedName(self, obj):
+        try:
+            return obj.blocked.profile.fullName
+        except Exception:
+            return obj.blocked.username
