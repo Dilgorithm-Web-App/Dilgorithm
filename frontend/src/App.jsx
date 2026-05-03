@@ -15,6 +15,8 @@ import { AppConfigurationPage } from './pages/AppConfigurationPage';
 import { EngagementModerationPage } from './pages/EngagementModerationPage';
 import { DashboardLayout } from './components/DashboardLayout';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { EditProfilePage } from './pages/EditProfilePage';
+import { ProfilePage } from './pages/ProfilePage';
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);
@@ -43,6 +45,8 @@ function App() {
             <Route path="/search" element={<DashboardRoute><SearchPage /></DashboardRoute>} />
             <Route path="/settings" element={<DashboardRoute><SettingsPage /></DashboardRoute>} />
             <Route path="/preferences" element={<DashboardRoute><Preferences /></DashboardRoute>} />
+            <Route path="/profile" element={<DashboardRoute><ProfilePage /></DashboardRoute>} />
+            <Route path="/profile/edit" element={<DashboardRoute><EditProfilePage /></DashboardRoute>} />
             <Route path="/engagement-moderation" element={<DashboardRoute><EngagementModerationPage /></DashboardRoute>} />
             <Route path="/app-configuration" element={<DashboardRoute><AppConfigurationPage /></DashboardRoute>} />
             <Route path="/about-us" element={<DashboardRoute><AboutUsPage /></DashboardRoute>} />

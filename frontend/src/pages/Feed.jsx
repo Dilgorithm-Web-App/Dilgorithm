@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { UserCardPhoto } from '../components/UserCard';
 import './Feed.css';
 
 const COLORS = ['linear-gradient(135deg,#E57373,#EF5350)', 'linear-gradient(135deg,#64B5F6,#42A5F5)', 'linear-gradient(135deg,#81C784,#66BB6A)', 'linear-gradient(135deg,#BA68C8,#AB47BC)', 'linear-gradient(135deg,#FFB74D,#FFA726)', 'linear-gradient(135deg,#4DD0E1,#26C6DA)'];
@@ -61,17 +62,17 @@ export const Feed = () => {
                     <div className="fd-top3">
                         {topMatches.map((m, i) => (
                             <div key={m.id} className="fd-card" style={{ animationDelay: `${i * .1}s` }}>
-                                <div className="fd-card-photo" style={{ background: COLORS[i] }}>
-                                    <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
+                                <UserCardPhoto profile={m} gradient={COLORS[i]}>
                                     {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
                                     <button 
+                                        type="button"
                                         className="fd-fav" 
                                         onClick={() => toggleFavorite(m.id)} 
                                         style={{ color: favorites.has(m.id) ? '#E57373' : 'inherit' }}
                                     >
                                         {favorites.has(m.id) ? '♥' : '♡'}
                                     </button>
-                                </div>
+                                </UserCardPhoto>
                                 <div className="fd-card-body">
                                     <h4 className="fd-card-name">{m.fullName || m.username}{m.age ? `, ${m.age}` : ''}</h4>
                                     {m.location && <p className="fd-card-meta">📍 {m.location}</p>}
@@ -97,17 +98,17 @@ export const Feed = () => {
                 <div className="fd-grid">
                     {allMatches.map((m, i) => (
                         <div key={m.id} className="fd-card" style={{ animationDelay: `${i * .06}s` }}>
-                            <div className="fd-card-photo" style={{ background: COLORS[i % 6] }}>
-                                <span className="fd-card-initial">{(m.fullName || m.username || 'U')[0].toUpperCase()}</span>
+                            <UserCardPhoto profile={m} gradient={COLORS[i % 6]}>
                                 {m.compatibility_score && <span className="fd-card-badge">{m.compatibility_score}% Match</span>}
                                 <button 
+                                    type="button"
                                     className="fd-fav" 
                                     onClick={() => toggleFavorite(m.id)} 
                                     style={{ color: favorites.has(m.id) ? '#E57373' : 'inherit' }}
                                 >
                                     {favorites.has(m.id) ? '♥' : '♡'}
                                 </button>
-                            </div>
+                            </UserCardPhoto>
                             <div className="fd-card-body">
                                 <h4 className="fd-card-name">{m.fullName || m.username}{m.age ? `, ${m.age}` : ''}</h4>
                                 {m.location && <p className="fd-card-meta">📍 {m.location}</p>}

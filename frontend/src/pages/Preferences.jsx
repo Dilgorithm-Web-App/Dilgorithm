@@ -161,7 +161,7 @@ export const Preferences = () => {
                         <button
                             type="button"
                             className="pref-btn pref-btn--profile"
-                            onClick={() => window.location.assign('/figma-import/slide1.html')}
+                            onClick={() => navigate('/profile/edit')}
                         >
                             Edit profile
                         </button>

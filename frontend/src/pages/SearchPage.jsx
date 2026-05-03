@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useCatalogMetadata } from '../hooks/useCatalogMetadata';
 import { OptionIterator } from '../catalog/OptionIterator';
+import { UserCardPhoto } from '../components/UserCard';
 import './SearchPage.css';
 
 function selectOptionsFromIterator(items) {
@@ -212,10 +213,7 @@ export const SearchPage = () => {
                 <div className="sp-grid">
                     {filtered.map((p, i) => (
                         <div key={p.id} className="sp-profile-card" style={{ animationDelay: `${i * 0.06}s` }}>
-                            <div className="sp-profile-photo" style={{ background: COLORS[i % 4] }}>
-                                <span className="sp-profile-initial">
-                                    {(p.fullName || p.username || 'U')[0].toUpperCase()}
-                                </span>
+                            <UserCardPhoto profile={p} gradient={COLORS[i % 4]} tall className="sp-profile-photo">
                                 <button
                                     type="button"
                                     className="sp-heart-btn"
@@ -224,7 +222,7 @@ export const SearchPage = () => {
                                 >
                                     {favorites.has(p.id) ? '♥' : '♡'}
                                 </button>
-                            </div>
+                            </UserCardPhoto>
                             <div className="sp-profile-body">
                                 <h4 className="sp-profile-name">
                                     {p.fullName || p.username}

@@ -1,104 +1,91 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import dgHeartLogo from '../assets/dg_heart_logo.png';
+import { PhotoUploadStateMachine } from '../photoUpload/PhotoUploadStateMachine';
+import { ProfilePhotoPayloadAdapter } from '../photoUpload/profilePhotoPayloadAdapter';
+import {
+    imageMimeStrategy,
+    maxSizeStrategy,
+    validateProfileImageFile,
+} from '../photoUpload/profilePhotoValidationStrategies';
+import { compressImageToJpegDataUrl, MAX_STORED_PROFILE_IMAGE_CHARS } from '../utils/compressImageToJpeg';
 import './RegisterPhotoPage.css';
 
-const MAX_FILE_BYTES = 8 * 1024 * 1024;
+/** Strategies for picker (empty cancel handled before validation). */
+const PICK_STRATEGIES = [imageMimeStrategy, maxSizeStrategy];
 
-function compressImageToJpegDataUrl(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const img = new Image();
-            img.onload = () => {
-                const maxSide = 512;
-                let { width, height } = img;
-                if (width > maxSide || height > maxSide) {
-                    if (width >= height) {
-                        height = Math.round((height * maxSide) / width);
-                        width = maxSide;
-                    } else {
-                        width = Math.round((width * maxSide) / height);
-                        height = maxSide;
-                    }
-                }
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.88));
-            };
-            img.onerror = () => reject(new Error('Could not read image.'));
-            img.src = reader.result;
-        };
-        reader.onerror = () => reject(new Error('Could not read file.'));
-        reader.readAsDataURL(file);
-    });
-}
-
+/** Onboarding / post-registration “Upload photo” step — hard gate before app entry. */
 export const RegisterPhotoPage = () => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
-    const [preview, setPreview] = useState(null);
-    const [file, setFile] = useState(null);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState('');
+    const machineRef = useRef(new PhotoUploadStateMachine());
+    const [, rerender] = useReducer((x) => x + 1, 0);
+    const [requireHighlight, setRequireHighlight] = useState(false);
+
+    const machine = machineRef.current;
+    const sync = () => rerender();
 
     useEffect(() => {
         const token = localStorage.getItem('access_token');
-        if (!token) {
-            navigate('/login', { replace: true });
-        }
+        if (!token) navigate('/login', { replace: true });
     }, [navigate]);
 
     const onPickFile = async (e) => {
         const f = e.target.files?.[0];
-        setError('');
+        machine.lastError = '';
+        setRequireHighlight(false);
         if (!f) {
-            setFile(null);
-            setPreview(null);
+            sync();
             return;
         }
-        if (!f.type.startsWith('image/')) {
-            setError('Please choose an image file.');
+        const stratErr = validateProfileImageFile(f, PICK_STRATEGIES);
+        if (stratErr) {
+            machine.lastError = stratErr;
+            sync();
             return;
         }
-        if (f.size > MAX_FILE_BYTES) {
-            setError('Image is too large. Use one under 8 MB.');
-            return;
-        }
-        setFile(f);
         try {
             const dataUrl = await compressImageToJpegDataUrl(f);
-            setPreview(dataUrl);
+            if (dataUrl.length > MAX_STORED_PROFILE_IMAGE_CHARS) {
+                machine.lastError =
+                    'Photo is still too large after compression. Try a smaller or simpler image.';
+                sync();
+                return;
+            }
+            machine.onValidatedPick(f, dataUrl);
         } catch {
-            setError('Could not process this image. Try another file.');
-            setFile(null);
-            setPreview(null);
+            machine.lastError = 'Could not process this image. Try another file.';
         }
+        sync();
     };
 
-    const submit = async (e) => {
-        e.preventDefault();
-        if (!preview || !file) {
-            setError('Add a profile photo to continue.');
+    const submit = async () => {
+        if (!machine.canProceedToNext()) {
+            setRequireHighlight(true);
             return;
         }
-        setBusy(true);
-        setError('');
+        if (!machine.beginUpload()) return;
+        sync();
         try {
-            await api.patch('accounts/profile/', { images: [preview] });
+            const body = ProfilePhotoPayloadAdapter.buildJsonPatchBody(machine.preview);
+            await api.patch('accounts/profile/', body);
+            machine.finishUploadSuccess();
             navigate('/home', { replace: true });
         } catch (err) {
-            setError(err.response?.data?.detail || 'Could not save your photo. Try again.');
-        } finally {
-            setBusy(false);
+            machine.finishUploadFailure(
+                err.response?.data?.detail || 'Could not save your photo. Try again.',
+            );
         }
+        sync();
     };
 
-    const canContinue = Boolean(preview) && !busy;
+    const phase = machine.getPhase();
+    const busy = phase === 'uploading';
+    const withinDbLimit =
+        !machine.preview || machine.preview.length <= MAX_STORED_PROFILE_IMAGE_CHARS;
+    const canContinue = machine.canProceedToNext() && !busy && withinDbLimit;
+    const photoReady = machine.isPhotoUploaded();
 
     return (
         <div className="rp-page">
@@ -108,10 +95,25 @@ export const RegisterPhotoPage = () => {
                 </div>
                 <h1 className="rp-title">Add your profile photo</h1>
                 <p className="rp-sub">
-                    Choose a clear photo of yourself. You need to add one before you can enter the app.
+                    Choose a clear photo of yourself. A valid image must be selected before you can continue.
                 </p>
 
-                <form className="rp-form" onSubmit={submit}>
+                {!machine.preview ? (
+                    <div
+                        className={`rp-required-banner ${requireHighlight ? 'rp-required-banner--emphasis' : ''}`}
+                        role="alert"
+                    >
+                        Profile photo is required to continue.
+                    </div>
+                ) : null}
+
+                <form
+                    className="rp-form"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        submit();
+                    }}
+                >
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -126,23 +128,43 @@ export const RegisterPhotoPage = () => {
                         onClick={() => fileInputRef.current?.click()}
                         disabled={busy}
                     >
-                        {preview ? 'Choose a different photo' : 'Choose photo'}
+                        {photoReady ? 'Choose a different photo' : 'Choose photo'}
                     </button>
 
-                    <div className={`rp-preview-wrap ${preview ? 'rp-preview-wrap--has' : ''}`}>
-                        {preview ? (
-                            <img src={preview} alt="Your preview" className="rp-preview-img" />
+                    <div className={`rp-preview-wrap ${machine.preview ? 'rp-preview-wrap--has' : ''}`}>
+                        {machine.preview ? (
+                            <img src={machine.preview} alt="Your profile preview" className="rp-preview-img" />
                         ) : (
-                            <span className="rp-preview-placeholder">No photo yet</span>
+                            <span className="rp-preview-placeholder">Preview appears here after you choose a photo</span>
                         )}
                     </div>
 
-                    <button type="submit" className="rp-continue" disabled={!canContinue}>
-                        {busy ? 'Saving…' : 'Continue to Dilgorithm'}
-                    </button>
+                    <div className="rp-continue-wrap">
+                        <button
+                            type="submit"
+                            className="rp-continue"
+                            disabled={!canContinue}
+                            aria-disabled={!canContinue}
+                        >
+                            {busy ? 'Saving…' : 'Next'}
+                        </button>
+                        {!canContinue && !busy ? (
+                            <button
+                                type="button"
+                                className="rp-continue-blocker"
+                                aria-label="Photo required before continuing"
+                                onClick={() => setRequireHighlight(true)}
+                            />
+                        ) : null}
+                    </div>
                 </form>
 
-                {error ? <p className="rp-error">{error}</p> : null}
+                {machine.preview && !withinDbLimit ? (
+                    <p className="rp-error" role="alert">
+                        Compressed photo still exceeds the storage limit. Choose a different image.
+                    </p>
+                ) : null}
+                {machine.lastError ? <p className="rp-error">{machine.lastError}</p> : null}
             </div>
         </div>
     );
