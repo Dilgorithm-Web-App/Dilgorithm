@@ -206,8 +206,20 @@ class AvailableFiltersView(APIView):
 
     def get(self, request, *args, **kwargs):
         filters = {
+            "locations": [
+                "Karachi",
+                "Lahore",
+                "Islamabad",
+                "Rawalpindi",
+                "Faisalabad",
+                "Multan",
+                "Peshawar",
+                "Quetta",
+                "Other",
+            ],
+            "sects": ["Sunni", "Shia", "Just Muslim", "Other"],
             "caste": ["Syed", "Sheikh", "Pathan", "Mughal", "Rajput", "Arain", "Jat", "Other"],
-            "education": ["High School", "Bachelors", "Masters", "PhD", "Other"]
+            "education": ["High School", "Bachelors", "Masters", "PhD", "Other"],
         }
         return Response(filters, status=status.HTTP_200_OK)
 

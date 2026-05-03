@@ -1,6 +1,6 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from './api';
+import api, { registerSessionExpiredHandler } from './api';
 
 export const AuthContext = createContext();
 
@@ -12,6 +12,17 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('access_token');
         if (token) setUser({ token });
     }, []);
+
+    const logout = useCallback(() => {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        setUser(null);
+        navigate('/login');
+    }, [navigate]);
+
+    useEffect(() => {
+        registerSessionExpiredHandler(logout);
+    }, [logout]);
 
     const login = async (email, password, captchaToken) => {
         try {
@@ -58,13 +69,6 @@ export const AuthProvider = ({ children }) => {
             alert(error.response?.data?.detail || 'Google sign-in failed.');
             return false;
         }
-    };
-
-    const logout = () => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        setUser(null);
-        navigate('/login');
     };
 
     /** Used after email registration (2FA) so the next step can call authenticated APIs without a full page reload. */
