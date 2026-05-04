@@ -89,7 +89,7 @@ export const Feed = () => {
 
     return (
         <div className="fd-wrap">
-            <h2 className="fd-main-title">✨ AI Recommended Matches ✨</h2>
+            <h2 className="fd-main-title">AI Recommended Matches</h2>
             <p className="fd-subtitle">Personalized matches ranked by compatibility with your preferences</p>
 
             <div className="fd-stats">
