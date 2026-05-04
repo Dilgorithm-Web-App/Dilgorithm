@@ -77,17 +77,63 @@ In addition to the stack listed earlier, the repo now also uses:
 | **Backend** | Django 6, DRF, SimpleJWT, django-cors-headers, Channels / Daphne, Google Auth libs |
 | **Database** | `settings.py` may be configured for **Microsoft SQL Server** (`mssql-django`, ODBC); adjust `DATABASES` for your environment |
 
-### Repository layout (high level)
+### Repository layout (expanded subfolders)
 
-```
+> Note: dependency/generated folders such as `.git/`, `venv/`, and `node_modules/` are omitted for readability.
+
+```text
 Dilgorithm/
 ├── backend/
-│   ├── accounts/     # models, views, serializers, ai_engine, matching_patterns, …
-│   ├── backend/      # settings, urls, asgi/wsgi
+│   ├── .django_cache/
+│   ├── accounts/
+│   │   ├── filters/
+│   │   ├── management/
+│   │   │   └── commands/
+│   │   ├── migrations/
+│   │   └── services/
+│   ├── backend/
 │   └── manage.py
 ├── frontend/
-│   ├── public/figma-import/
-│   └── src/          # pages, components, onboarding (patterns), api.js
+│   ├── dist/
+│   │   ├── assets/
+│   │   └── figma-import/
+│   ├── figma-import/
+│   ├── public/
+│   │   └── figma-import/
+│   └── src/
+│       ├── assets/
+│       ├── auth/
+│       ├── catalog/
+│       │   ├── adapters/
+│       │   ├── composite/
+│       │   ├── factory/
+│       │   └── states/
+│       ├── chat/
+│       │   └── ws/
+│       ├── components/
+│       ├── data/
+│       ├── features/
+│       │   ├── favorites/
+│       │   └── search/
+│       ├── hooks/
+│       ├── onboarding/
+│       │   ├── adapters/
+│       │   ├── components/
+│       │   │   └── steps/
+│       │   ├── composite/
+│       │   ├── config/
+│       │   ├── factory/
+│       │   ├── hooks/
+│       │   ├── layouts/
+│       │   ├── observer/
+│       │   ├── patterns/
+│       │   ├── services/
+│       │   ├── store/
+│       │   └── templates/
+│       ├── pages/
+│       ├── patterns/
+│       ├── photoUpload/
+│       └── utils/
 └── README.md
 ```
 
