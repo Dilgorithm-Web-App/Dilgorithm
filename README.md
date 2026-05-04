@@ -139,20 +139,72 @@ Dilgorithm/
 
 ### Design patterns and principles
 
-Central index: `frontend/src/onboarding/designPatternManifest.js`
+**Machine-readable index (single source of truth for pattern locations + SOLID map):**  
+`frontend/src/onboarding/designPatternManifest.js`  
+It exports **`DESIGN_PATTERN_MANIFEST`**, which bundles GoF pattern paths, feature stacks (`chatWebSocketStack`, `favoritesFeedSync`), and nested **`solidPrinciples`** / **`engineeringPrinciples`** (DRY / KISS / layout consistency).
 
-| Pattern | Primary location(s) |
-|--------|----------------------|
-| **State** | `frontend/src/onboarding/patterns/FlowState.js` |
-| **Template Method** | `frontend/src/onboarding/templates/OnboardingStepTemplate.jsx`; `backend/accounts/matching_patterns.py` (`CompatibilityScoringTemplate`) |
-| **Adapter** | `frontend/src/onboarding/adapters/profileAdapter.js`; `InterestAdapter` in `matching_patterns.py` |
-| **Observer** | `frontend/src/onboarding/observer/ProgressSubject.js`; `UserFormDataStore` subscriptions |
-| **Iterator** | `frontend/src/onboarding/patterns/StepIterator.js`; `ranked_match_records` in `matching_patterns.py` |
-| **Singleton** | `frontend/src/onboarding/store/UserFormDataStore.js` |
-| **Factory** | `frontend/src/onboarding/factory/StepFactory.jsx` |
-| **Composite** | `frontend/src/onboarding/composite/FormFieldComposite.js`; `ProfileFilterComposite` in `matching_patterns.py` |
+**Backend structural patterns:** `backend/accounts/patterns.py` (EventBus, ViewResponseFactory, AccountStateMachine, NotificationService).  
+**Matching / scoring patterns:** `backend/accounts/matching_patterns.py` (Adapter, Template Method, Composite, Iterator for the AI pipeline).
 
-Principles reflected in structure: **SRP**, **OCP**, **DIP** (e.g. injectable onboarding API service; DTO adapter for scoring).
+---
+
+#### SOLID (detailed)
+
+These five principles structure how modules depend on each other and how new behavior is added without breaking callers.
+
+| Principle | Meaning | How Dilgorithm applies it |
+|-----------|---------|---------------------------|
+| **S — Single Responsibility** | A class or module should have only one reason to change: one job, one axis of change. | **UI pages** orchestrate (fetch, navigate, local UI state) but do not reimplement API shapes—**`ApiResponseAdapter`** normalises data; **`formatApiError`** only turns HTTP errors into user-visible strings; **Django `services/`** (e.g. chat, group chat, search query) own persistence and rules; **`ViewResponseFactory`** centralises JSON response building so views are not a mix of ad-hoc `Response({...})` calls. |
+| **O — Open/Closed** | Software should be **open for extension** (new behavior) but **closed for modification** of stable cores: add new types instead of growing giant `if/else` trees. | New onboarding steps are registered via **`StepFactory`**; new search filters are added as **leaves in `FilterComposite`**; new account lifecycle transitions go through **new `AccountState` handling** in `AccountStateMachine` rather than scattered `if accountStatus == ...` in many files; new API success/error shapes are extended through **`ViewResponseFactory`** helpers rather than one-off response blobs everywhere. |
+| **L — Liskov Substitution** | Subtypes must be usable anywhere their base type is expected: same expectations for inputs/outputs, no surprise stricter preconditions. | **Account state** objects (`ActiveState`, `SuspendedState`, `BannedState`) all implement the same transition contract; **`CompatibilityScoringTemplate`** subclasses honor the template’s hooks; **adapter methods** in `ApiResponseAdapter` return the same **UnifiedProfile**-shaped result so screens can swap data sources without branching on “which endpoint” in every component. |
+| **I — Interface Segregation** | Prefer many small, focused interfaces over one “fat” interface that forces every client to depend on methods they do not use. | **`EventBus`** exposes a minimal **subscribe / publish** API; **`NotificationService`** exposes narrow notification methods, not a dump of the whole app; avoid passing huge “context” objects into every child—pass only what a component needs. |
+| **D — Dependency Inversion** | High-level modules should depend on **abstractions** (contracts, DTOs, facades), not on low-level details (raw JSON keys, ORM calls inside JSX, hard-coded URLs). | **React** depends on **UnifiedProfile** (adapter output), not on raw DRF field names in every file; **chat** uses an injectable **WebSocket** and **token resolver** in `ChatWebSocketClient` so connection logic is not hopelessly tied to one global; **Django views** lean on **serializers** and **services** and **ViewResponseFactory** instead of embedding SQL/ORM logic in the view function body. |
+
+---
+
+#### Additional engineering principles (used alongside SOLID)
+
+| Principle | Meaning | In this project |
+|-----------|---------|-----------------|
+| **DRY (Don’t Repeat Yourself)** | Every piece of knowledge should have a **single authoritative** place; avoid copy-pasting the same error-parsing or field-mapping logic. | Central **`formatApiError`** for Axios/DRF errors; **adapters** for API shapes; **`ViewResponseFactory`** for HTTP JSON bodies on the backend. |
+| **KISS (Keep It Simple, Stupid)** | Prefer straightforward structure and names over clever one-off tricks that are hard to maintain. | Small modules, explicit route and folder names, dashboard layouts using simple **max-width + margin-inline: auto** for centered columns (`hp-grid`, `sp-wrap`, `fd-wrap`). |
+| **Consistency** | Same kinds of UI/API behavior should look and behave the same everywhere. | Shared **`DashboardLayout`**; toast **`NotificationService`**; **`TAB_CONFIG`**-style registries where tabs drive UI (e.g. admin moderation). |
+| **Separation of concerns** | Networking, presentation, domain rules, and persistence stay in different layers. | **`api.js`** handles auth headers and refresh; **pages** compose UX; **services/** on Django hold business rules; **consumers.py** bridges WebSockets to services. |
+| **Observer / pub-sub for domain events** | Screens should not hard-wire to each other; they react to **named events**. | Frontend **`eventBus`** (`favorite.toggled`, `user.blocked`, `report.submitted`, …); backend **`event_bus`** for `user.registered`, `report.created`, etc. |
+| **Anti-corruption / Adapter boundary** | External APIs (and serializer quirks) are translated at the edge into **your** domain shape before UI use. | **`ApiResponseAdapter`**, **`adaptChatContact`**, onboarding **`profileAdapter`**, backend **`InterestAdapter`** for scoring. |
+
+---
+
+#### Gang of Four (GoF) and related patterns (where they live)
+
+These classic patterns are **named and located** in `designPatternManifest.js`. Summary:
+
+| Pattern | Role | Primary locations |
+|---------|------|-------------------|
+| **State** | Encapsulate behavior that changes when internal state changes. | Onboarding: `FlowState.js`; dashboard: `PageState.js`; backend: `AccountStateMachine` in `patterns.py`. |
+| **Template Method** | Define algorithm skeleton; subclasses/hooks fill steps. | Onboarding: `OnboardingStepTemplate.jsx`; dashboard: `ProfileCardTemplate.jsx`; backend: `CompatibilityScoringTemplate` in `matching_patterns.py`. |
+| **Adapter** | Convert foreign interfaces into the interface your app expects. | Onboarding: `profileAdapter.js`; dashboard: `ApiResponseAdapter.js`; backend: `InterestAdapter`. |
+| **Observer** | Notify dependents when state/events change without tight coupling. | Onboarding: `ProgressSubject.js` / store; dashboard: `EventBus.js`; backend: `EventBus` in `patterns.py`. |
+| **Iterator** | Sequential access without exposing internals. | Onboarding: `StepIterator.js`; dashboard: `MatchIterator.js`; backend: `ranked_match_records` and iterators in matching pipeline. |
+| **Singleton** | One shared instance for a coordinated resource. | Onboarding: `UserFormDataStore.js`; dashboard: `NotificationService.js`; backend: `NotificationService` / module-level helpers in `patterns.py`. |
+| **Factory** | Create objects/components without baking concrete types into callers. | Onboarding: `StepFactory.jsx`; dashboard: `PageFactory.jsx`; backend: `ViewResponseFactory`. |
+| **Composite** | Treat individual objects and compositions uniformly. | Onboarding: `FormFieldComposite.js`; dashboard: `FilterComposite.js`; backend: `ProfileFilterComposite` + filter leaves. |
+
+**Composite stacks (multi-pattern):**
+
+- **Chat WebSocket stack** (`ChatWebSocketClient.js`, plus `consumers.py`, `jwt_ws_middleware.py`, chat services): combines connection **state**, **observer**-style events, message **composite**, retry **iterator** behavior, message **adapter**, URL **factory**, and single-flight token access (**singleton**-like)—with **DIP** via injectable WebSocket and token resolver.
+- **Favorites from feed** (`features/favorites/favoriteIdsFromFeed.js`): **SRP** derivation of favorite IDs from feed rows; small **adapter**/factory helpers so Feed/Search do not depend on raw row shapes.
+
+---
+
+#### Practical rules for contributors
+
+- Prefer **`ViewResponseFactory`** (or consistent serializer responses) in Django views instead of ad-hoc `Response(...)` shapes.
+- Prefer **`formatApiError`** (or one shared helper) over repeating `err.response?.data?.detail` chains in React.
+- Prefer **`eventBus` / backend `event_bus`** for cross-feature reactions instead of importing unrelated screens into each other.
+- Prefer **new files under `accounts/services/`** for heavy logic instead of growing `views.py` indefinitely (large views file is acknowledged technical debt).
+
+---
 
 ### API overview (`/api/accounts/`)
 
