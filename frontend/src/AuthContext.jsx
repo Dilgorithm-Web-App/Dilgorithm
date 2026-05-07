@@ -1,12 +1,15 @@
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { registerSessionExpiredHandler } from './api';
+import { formatApiError } from './utils/formatApiError';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const navigate = useNavigate();
+    /** Google ID tokens are one-use; block duplicate submits (e.g. StrictMode / double taps). */
+    const googleLoginInFlightRef = useRef(false);
 
     useEffect(() => {
         const token = localStorage.getItem('access_token');
@@ -24,13 +27,12 @@ export const AuthProvider = ({ children }) => {
         registerSessionExpiredHandler(logout);
     }, [logout]);
 
-    const login = async (email, password, captchaToken, options = {}) => {
+    const login = async (email, password, options = {}) => {
         const { redirectTo = '/home', staffOnly = false } = options;
         try {
             const response = await api.post('accounts/login/', {
                 email,
                 password,
-                captcha_token: captchaToken,
             });
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
@@ -71,26 +73,25 @@ export const AuthProvider = ({ children }) => {
             navigate(redirectTo);
             return true;
         } catch (error) {
-            const detail =
-                error.response?.data?.detail ||
-                (typeof error.response?.data === 'string' ? error.response.data : null) ||
-                error.message;
-            alert(detail ? `Login failed: ${detail}` : 'Login failed. Check your credentials and CAPTCHA.');
+            alert(formatApiError(error, 'Login failed. Check your credentials.'));
             return false;
         }
     };
 
-    const loginWithGoogle = async (credentialResponse, captchaToken, options = {}) => {
+    const loginWithGoogle = useCallback(async (credentialResponse, options = {}) => {
         const { redirectTo = '/home', staffOnly = false } = options;
+        if (googleLoginInFlightRef.current) {
+            return false;
+        }
         const credential = credentialResponse?.credential;
         if (!credential) {
             alert('Google sign-in did not return a valid credential.');
             return false;
         }
+        googleLoginInFlightRef.current = true;
         try {
             const response = await api.post('accounts/google-login/', {
                 credential,
-                captcha_token: captchaToken,
             });
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
@@ -115,17 +116,11 @@ export const AuthProvider = ({ children }) => {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
                     setUser(null);
-                    const d = verifyErr.response?.data?.detail;
-                    const msg =
-                        typeof d === 'string'
-                            ? d
-                            : Array.isArray(d)
-                              ? d[0]
-                              : verifyErr.message;
                     alert(
-                        msg
-                            ? `Could not verify staff access: ${msg}`
-                            : 'Could not verify staff access. Is the API running (and is your user marked staff in Django)?',
+                        formatApiError(
+                            verifyErr,
+                            'Could not verify staff access. Is the API running (and is your user marked staff in Django)?',
+                        ),
                     );
                     return false;
                 }
@@ -134,10 +129,12 @@ export const AuthProvider = ({ children }) => {
             navigate(redirectTo);
             return true;
         } catch (error) {
-            alert(error.response?.data?.detail || 'Google sign-in failed.');
+            alert(formatApiError(error, 'Google sign-in failed.'));
             return false;
+        } finally {
+            googleLoginInFlightRef.current = false;
         }
-    };
+    }, [navigate]);
 
     /** Used after email registration (2FA) so the next step can call authenticated APIs without a full page reload. */
     const setSession = (access, refresh, partial = {}) => {

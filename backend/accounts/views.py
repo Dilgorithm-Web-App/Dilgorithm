@@ -14,8 +14,6 @@ from google.auth.transport import requests as google_requests
 import json
 import logging
 import random
-import urllib.parse
-import urllib.request
 from .models import (
     BlockedUser,
     ChatGroupMember,
@@ -99,41 +97,6 @@ class RegisterView(generics.CreateAPIView):
         event_bus.publish("user.registered", {"email": user.email})
 
 
-def verify_recaptcha(captcha_token):
-    """
-    In DEBUG, if RECAPTCHA_SECRET_KEY is not set, skip verification so local dev works
-    without Google reCAPTCHA keys. Production must set the secret and use real tokens.
-    """
-    secret = (getattr(settings, "RECAPTCHA_SECRET_KEY", None) or "").strip()
-    if settings.DEBUG and not secret:
-        return True, None
-    if not secret:
-        return False, "Missing RECAPTCHA_SECRET_KEY in backend environment."
-    if not captcha_token:
-        return False, "CAPTCHA token is required."
-
-    payload = urllib.parse.urlencode(
-        {
-            "secret": secret,
-            "response": captcha_token,
-        }
-    ).encode("utf-8")
-
-    try:
-        req = urllib.request.Request(
-            "https://www.google.com/recaptcha/api/siteverify",
-            data=payload,
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=10) as response:
-            data = json.loads(response.read().decode("utf-8"))
-        if data.get("success"):
-            return True, None
-        return False, "Invalid CAPTCHA. Please try again."
-    except Exception:
-        return False, "Could not verify CAPTCHA. Please try again."
-
-
 def build_unique_username_from_email(email):
     base = email.split("@")[0][:24] or "google_user"
     candidate = base
@@ -144,15 +107,10 @@ def build_unique_username_from_email(email):
     return candidate
 
 
-class CaptchaLoginView(APIView):
+class EmailPasswordLoginView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        captcha_token = request.data.get("captcha_token")
-        is_valid, error = verify_recaptcha(captcha_token)
-        if not is_valid:
-            return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
-
         serializer = TokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -170,11 +128,6 @@ class GoogleLoginView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        captcha_token = request.data.get("captcha_token")
-        is_valid, error = verify_recaptcha(captcha_token)
-        if not is_valid:
-            return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
-
         google_credential = request.data.get("credential")
         if not google_credential:
             return Response(
@@ -187,26 +140,31 @@ class GoogleLoginView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        client_id = settings.GOOGLE_CLIENT_ID
         try:
             token_info = id_token.verify_oauth2_token(
                 google_credential,
                 google_requests.Request(),
-                settings.GOOGLE_CLIENT_ID,
+                client_id,
             )
-        except Exception:
-            return Response(
-                {"detail": "Invalid Google token."},
-                status=status.HTTP_400_BAD_REQUEST,
+        except Exception as exc:
+            logger.warning("Google ID token verification failed: %s", exc)
+            detail = (
+                "Invalid Google token. Check that backend GOOGLE_CLIENT_ID matches "
+                "frontend VITE_GOOGLE_CLIENT_ID (same Google OAuth Web client id)."
             )
+            if settings.DEBUG:
+                detail = f"{detail} Underlying error: {exc!s}"
+            return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
 
-        email = token_info.get("email")
+        email = (token_info.get("email") or "").strip().lower()
         if not email:
             return Response(
                 {"detail": "Google account email not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = CustomUser.objects.filter(email=email).first()
+        user = CustomUser.objects.filter(email__iexact=email).first()
         if not user:
             username = build_unique_username_from_email(email)
             user = CustomUser.objects.create_user(
@@ -214,9 +172,15 @@ class GoogleLoginView(APIView):
                 username=username,
                 password=None,
             )
-            user.isVerified = token_info.get("email_verified", False)
+            user.isVerified = bool(token_info.get("email_verified"))
             user.save(update_fields=["isVerified"])
             ensure_user_records(user)
+
+        if not user.is_active:
+            return Response(
+                {"detail": "This account is disabled."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         user.touch_last_seen()
 

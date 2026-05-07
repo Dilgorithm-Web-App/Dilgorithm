@@ -58,7 +58,7 @@ The sections below **add to** the description above and reflect the current code
 
 ### Additional and expanded features
 
-*   **Email/password login** with **Google reCAPTCHA**; **Google OAuth** sign-in (client `VITE_GOOGLE_CLIENT_ID`, server verification as configured).
+*   **Email/password login**; **Google OAuth** sign-in (client `VITE_GOOGLE_CLIENT_ID`, server verification as configured).
 *   **Registration** with profile basics, then **email OTP (2FA)** (`register/init-2fa/`, `register/verify-2fa/`). Successful verification returns **JWT access and refresh** tokens.
 *   **Profile photo step** (`/register/photo`) after OTP: user adds a photo before continuing; stored on `profile.images`; **dashboard header avatar** uses the first image.
 *   **Match feed** implementation uses `backend/accounts/ai_engine.py` and **`matching_patterns.py`** (adapter, template-method scoring, composite filters).
@@ -73,7 +73,7 @@ In addition to the stack listed earlier, the repo now also uses:
 
 | Layer | Notes |
 |--------|--------|
-| **Frontend** | React 19, Vite 8, React Router 7, `@react-oauth/google`, `react-google-recaptcha` |
+| **Frontend** | React 19, Vite 8, React Router 7, `@react-oauth/google` |
 | **Backend** | Django 6, DRF, SimpleJWT, django-cors-headers, Channels / Daphne, Google Auth libs |
 | **Database** | `settings.py` may be configured for **Microsoft SQL Server** (`mssql-django`, ODBC); adjust `DATABASES` for your environment |
 
@@ -212,8 +212,8 @@ These classic patterns are **named and located** in `designPatternManifest.js`. 
 |--------|------|--------|
 | POST | `register/init-2fa/` | Start OTP registration |
 | POST | `register/verify-2fa/` | Verify OTP; returns `access`, `refresh`, `email`, `username` |
-| POST | `login/` | Email/password + captcha |
-| POST | `google-login/` | Google credential + captcha |
+| POST | `login/` | Email/password (JWT) |
+| POST | `google-login/` | Google credential (JWT) |
 | POST | `token/refresh/` | JWT refresh |
 | GET/PATCH | `profile/` | Profile (`images`, onboarding fields, etc.) |
 | GET/PATCH | `preferences/` | Interests / partner criteria |
@@ -234,7 +234,6 @@ These classic patterns are **named and located** in `designPatternManifest.js`. 
 | Variable | Purpose |
 |----------|---------|
 | `GOOGLE_CLIENT_ID` | Google verification (if used) |
-| `RECAPTCHA_SECRET_KEY` | Captcha on login / Google routes |
 | `EMAIL_*`, `DEFAULT_FROM_EMAIL` | SMTP for registration OTP |
 
 **Frontend (`frontend/.env`)**:
@@ -242,7 +241,6 @@ These classic patterns are **named and located** in `designPatternManifest.js`. 
 | Variable | Purpose |
 |----------|---------|
 | `VITE_GOOGLE_CLIENT_ID` | Google button |
-| `VITE_RECAPTCHA_SITE_KEY` | reCAPTCHA widget |
 | `VITE_API_BASE_URL` | Optional; default **`/api/`** with Vite dev proxy to Django |
 
 ### 2. Frontend setup (React / Vite)
@@ -267,7 +265,7 @@ Serve `dist/` and reverse-proxy `/api` to Django or set `VITE_API_BASE_URL` as n
 
 ### Changelog summary (recent engineering)
 
-*   **Login Page Aesthetics:** Visually enhanced and modernized the login page with a cohesive aesthetic (linear gradient background, improved typography hierarchy, standardized button layouts, refined link styling, and cleaner reCAPTCHA integration).
+*   **Login Page Aesthetics:** Visually enhanced and modernized the login page with a cohesive aesthetic (linear gradient background, improved typography hierarchy, standardized button layouts, refined link styling).
 *   **Dynamic Frontend Integration:** Replaced static mock data with dynamic backend integration for user interests, chat contacts, caste and education filters, and the "Why this match" logic. Connected heart/favorite buttons to backend APIs.
 *   **Family Member Feature:** End-to-end implementation including backend models, API endpoints (`/family/`), AI matching engine updates for family background considerations, and a dynamic React component (`FamilyForm.jsx`).
 *   **AI Engine Optimization:** Refined `ai_engine.py` logic to accurately calculate and rank compatibility scores, seamlessly processing user interests, partner criteria, and profile data.

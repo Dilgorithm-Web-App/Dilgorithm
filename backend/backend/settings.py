@@ -162,8 +162,8 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-RECAPTCHA_SECRET_KEY = os.getenv("RECAPTCHA_SECRET_KEY", "")
+# Must match the Web client id in VITE_GOOGLE_CLIENT_ID (no surrounding whitespace).
+GOOGLE_CLIENT_ID = (os.getenv("GOOGLE_CLIENT_ID", "") or "").strip()
 
 # Email (OTP, etc.) — override with backend/.env, e.g. Mailtrap or Gmail SMTP.
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")

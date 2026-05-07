@@ -52,3 +52,91 @@
     border-bottom: 1px solid #f2f2f2;
     color: #444;
 }
+
+.em-blocked-section {
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid #eee;
+}
+
+.em-blocked-title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+}
+
+.em-blocked-hint {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: #777;
+    line-height: 1.45;
+}
+
+.em-blocked-empty {
+    margin: 0;
+    font-size: 14px;
+    color: #999;
+}
+
+.em-blocked-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.em-blocked-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.em-blocked-item:last-child {
+    border-bottom: none;
+}
+
+.em-blocked-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.em-blocked-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+.em-blocked-email {
+    font-size: 12px;
+    color: #888;
+    word-break: break-all;
+}
+
+.em-unblock-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid #8b1a1a;
+    background: #fff;
+    color: #8b1a1a;
+    font-weight: 600;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.em-unblock-btn:hover:not(:disabled) {
+    background: #8b1a1a;
+    color: #fff;
+}
+
+.em-unblock-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

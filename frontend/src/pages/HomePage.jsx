@@ -77,7 +77,16 @@ export const HomePage = () => {
                 <div className="hp-card hp-card--int">
                     <h3 className="hp-title">My Interests</h3>
                     {interests.length === 0 ? (
-                        <p className="hp-empty">No interests set yet.</p>
+                        <div className="hp-int-empty">
+                            <p className="hp-empty">No interests set yet.</p>
+                            <button
+                                type="button"
+                                className="hp-add-interests-btn"
+                                onClick={() => navigate('/preferences')}
+                            >
+                                Add your interests
+                            </button>
+                        </div>
                     ) : (
                         <div className="hp-tags">
                             {interests.map((t) => (

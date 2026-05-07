@@ -1,9 +1,8 @@
-import { useState, useContext, useRef } from 'react';
+import { useState, useContext } from 'react';
 import { AuthContext } from '../AuthContext';
 import api from '../api';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import ReCAPTCHA from 'react-google-recaptcha';
 import dgHeartLogo from '../assets/dg_heart_logo.png';
 import dilgorithmLogoText from '../assets/dilgorithm-logo-text.png';
 import './AuthPages.css';
@@ -14,41 +13,19 @@ const AUTH_UI_FONT = '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif'
 export const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [captchaToken, setCaptchaToken] = useState(null);
     const [statusMessage, setStatusMessage] = useState('');
     const { login, loginWithGoogle } = useContext(AuthContext);
-    const recaptchaRef = useRef(null);
 
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-    const captchaRequired = Boolean(recaptchaSiteKey);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (captchaRequired && !captchaToken) {
-            setStatusMessage('Please complete CAPTCHA before signing in.');
-            return;
-        }
-
-        const success = await login(email, password, captchaToken || '');
-        if (!success) {
-            recaptchaRef.current?.reset();
-            setCaptchaToken(null);
-        }
+        await login(email, password);
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
-        if (captchaRequired && !captchaToken) {
-            setStatusMessage('Complete CAPTCHA before using Google sign-in.');
-            return;
-        }
-
         setStatusMessage('');
-        const success = await loginWithGoogle(credentialResponse, captchaToken || '');
-        if (!success) {
-            recaptchaRef.current?.reset();
-            setCaptchaToken(null);
-        }
+        await loginWithGoogle(credentialResponse);
     };
 
     return (
@@ -103,26 +80,6 @@ export const Login = () => {
                         <button type="submit" className="qabool-hai-btn">Qabool Hai</button>
                     </form>
 
-                    {/* Captcha Wrapper clips the red text */}
-                    <div className="captcha-wrapper">
-                        {recaptchaSiteKey ? (
-                            <ReCAPTCHA
-                                ref={recaptchaRef}
-                                sitekey={recaptchaSiteKey}
-                                onChange={(token) => {
-                                    setCaptchaToken(token);
-                                    if (token) setStatusMessage('');
-                                }}
-                                size="normal"
-                            />
-                        ) : (
-                            <div style={{ fontSize: '13px', color: '#6b6375' }}>
-                                No reCAPTCHA site key — CAPTCHA skipped in local dev (backend must run with
-                                DEBUG and no RECAPTCHA_SECRET_KEY).
-                            </div>
-                        )}
-                    </div>
-
                     <div className="divider">
                         <span>OR</span>
                     </div>
@@ -149,46 +106,24 @@ export const Login = () => {
     );
 };
 
-/** Same credentials + CAPTCHA as member login; after success, requires is_staff and lands on /admin. */
+/** Same credentials as member login; after success, requires is_staff and lands on /admin. */
 export const AdminLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [captchaToken, setCaptchaToken] = useState(null);
     const [statusMessage, setStatusMessage] = useState('');
     const { login, loginWithGoogle } = useContext(AuthContext);
-    const recaptchaRef = useRef(null);
 
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
     const staffLoginOpts = { redirectTo: '/admin', staffOnly: true };
-    const captchaRequired = Boolean(recaptchaSiteKey);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (captchaRequired && !captchaToken) {
-            setStatusMessage('Please complete CAPTCHA before signing in.');
-            return;
-        }
-
-        const success = await login(email, password, captchaToken || '', staffLoginOpts);
-        if (!success) {
-            recaptchaRef.current?.reset();
-            setCaptchaToken(null);
-        }
+        await login(email, password, staffLoginOpts);
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
-        if (captchaRequired && !captchaToken) {
-            setStatusMessage('Complete CAPTCHA before using Google sign-in.');
-            return;
-        }
-
         setStatusMessage('');
-        const success = await loginWithGoogle(credentialResponse, captchaToken || '', staffLoginOpts);
-        if (!success) {
-            recaptchaRef.current?.reset();
-            setCaptchaToken(null);
-        }
+        await loginWithGoogle(credentialResponse, staffLoginOpts);
     };
 
     return (
@@ -242,25 +177,6 @@ export const AdminLogin = () => {
                             Open admin dashboard
                         </button>
                     </form>
-
-                    <div className="captcha-wrapper">
-                        {recaptchaSiteKey ? (
-                            <ReCAPTCHA
-                                ref={recaptchaRef}
-                                sitekey={recaptchaSiteKey}
-                                onChange={(token) => {
-                                    setCaptchaToken(token);
-                                    if (token) setStatusMessage('');
-                                }}
-                                size="normal"
-                            />
-                        ) : (
-                            <div style={{ fontSize: '13px', color: '#6b6375' }}>
-                                No reCAPTCHA site key — CAPTCHA skipped in local dev (backend must run with
-                                DEBUG and no RECAPTCHA_SECRET_KEY).
-                            </div>
-                        )}
-                    </div>
 
                     <div className="divider">
                         <span>OR</span>

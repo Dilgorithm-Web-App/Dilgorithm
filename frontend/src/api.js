@@ -23,7 +23,8 @@ function notifySessionExpired() {
     sessionExpiredHandler();
 }
 
-function shouldSkipTokenRefresh(config) {
+/** Routes where sending a stale Bearer token breaks SimpleJWT before AllowAny runs. */
+function isPublicAuthRoute(config) {
     const url = config.url || '';
     return (
         url.includes('accounts/login/') ||
@@ -37,7 +38,7 @@ const api = axios.create({ baseURL });
 
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('access_token');
-    if (token) {
+    if (token && !isPublicAuthRoute(config)) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -53,7 +54,7 @@ api.interceptors.response.use(
         if (config._retry) {
             return Promise.reject(error);
         }
-        if (shouldSkipTokenRefresh(config)) {
+        if (isPublicAuthRoute(config)) {
             return Promise.reject(error);
         }
         if (!config.headers?.Authorization) {
