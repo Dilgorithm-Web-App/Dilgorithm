@@ -568,6 +568,7 @@ export const RegisterCredentials2FA = () => {
     const [otp, setOtp] = useState('');
     const [otpSent, setOtpSent] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
+    const useDbProjectAuth = (import.meta.env.VITE_USE_DB_PROJECT_AUTH || '').toLowerCase() === 'true';
 
     const submitCredentials = async (e) => {
         e.preventDefault();
@@ -577,6 +578,26 @@ export const RegisterCredentials2FA = () => {
         }
         if (password !== confirmPassword) {
             setStatusMessage('Passwords do not match.');
+            return;
+        }
+        if (useDbProjectAuth) {
+            try {
+                const { data } = await api.post('accounts/db-signup/', {
+                    fullName: profile.name,
+                    email,
+                    username: profile.name,
+                    password,
+                });
+                if (data.userId) {
+                    localStorage.setItem('access_token', `db-session-${data.userId}`);
+                    localStorage.setItem('db_user_id', String(data.userId));
+                    navigate('/db-profile', { replace: true });
+                    return;
+                }
+                setStatusMessage(data.detail || 'Signup failed.');
+            } catch (error) {
+                setStatusMessage(error.response?.data?.detail || 'Could not complete signup.');
+            }
             return;
         }
         try {
@@ -652,6 +673,11 @@ export const RegisterCredentials2FA = () => {
                     </button>
                 </div>
                 <h2 style={{ textAlign: 'center', marginTop: 0 }}>Register — step 2 (credentials + 2fa)</h2>
+                {useDbProjectAuth ? (
+                    <p style={{ textAlign: 'center', color: '#6b6375' }}>
+                        SQL auth mode is enabled. OTP step is bypassed and signup is validated through stored procedures.
+                    </p>
+                ) : null}
 
                 {!otpSent ? (
                     <form onSubmit={submitCredentials} style={{ display: 'grid', gap: '12px' }}>

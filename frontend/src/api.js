@@ -28,6 +28,8 @@ function isPublicAuthRoute(config) {
     const url = config.url || '';
     return (
         url.includes('accounts/login/') ||
+        url.includes('accounts/db-login/') ||
+        url.includes('accounts/db-signup/') ||
         url.includes('accounts/google-login/') ||
         url.includes('accounts/register/') ||
         url.includes('accounts/token/refresh/')

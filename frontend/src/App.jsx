@@ -19,6 +19,7 @@ import { ProfileViewPage } from './pages/ProfileViewPage';
 import { EditProfilePage } from './pages/EditProfilePage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { DbDummyProfilePage } from './pages/DbDummyProfilePage';
 
 const RequireAuth = ({ children }) => {
     const { user } = useContext(AuthContext);
@@ -42,6 +43,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/register/credentials" element={<RegisterCredentials2FA />} />
             <Route path="/register/photo" element={<RegisterPhotoPage />} />
+            <Route path="/db-profile" element={<DbDummyProfilePage />} />
 
             <Route path="/home" element={<DashboardRoute><HomePage /></DashboardRoute>} />
             <Route path="/feed" element={<DashboardRoute><Feed /></DashboardRoute>} />

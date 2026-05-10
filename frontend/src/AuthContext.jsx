@@ -8,6 +8,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const navigate = useNavigate();
+    const useDbProjectAuth = (import.meta.env.VITE_USE_DB_PROJECT_AUTH || '').toLowerCase() === 'true';
     /** Google ID tokens are one-use; block duplicate submits (e.g. StrictMode / double taps). */
     const googleLoginInFlightRef = useRef(false);
 
@@ -30,10 +31,17 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password, options = {}) => {
         const { redirectTo = '/home', staffOnly = false } = options;
         try {
-            const response = await api.post('accounts/login/', {
-                email,
-                password,
-            });
+            if (useDbProjectAuth) {
+                const response = await api.post('accounts/db-login/', { email, password });
+                localStorage.setItem('access_token', response.data.sessionId);
+                localStorage.removeItem('refresh_token');
+                localStorage.setItem('db_user_id', String(response.data.userId));
+                setUser({ token: response.data.sessionId, dbUserId: response.data.userId });
+                navigate('/db-profile');
+                return true;
+            }
+
+            const response = await api.post('accounts/login/', { email, password });
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
             setUser({ token: response.data.access });

@@ -5,12 +5,13 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
-from django.db import models
+from django.db import models, connection
 from django.db.models import Q
 from django.core.cache import cache
 from django.core.mail import send_mail
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+import hashlib
 import json
 import logging
 import random
@@ -312,6 +313,101 @@ class RegisterVerify2FAView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class DbProjectSignupView(APIView):
+    """
+    SQL-project signup endpoint.
+    Calls dbo.sp_RegisterUser and returns message/userId for frontend redirection.
+    """
+
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        full_name = (request.data.get("fullName") or "").strip()
+        email = (request.data.get("email") or "").strip().lower()
+        username = (request.data.get("username") or "").strip()
+        password = request.data.get("password") or ""
+
+        password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+        query = """
+        DECLARE @UserId INT, @Message NVARCHAR(200);
+        EXEC dbo.sp_RegisterUser
+            @FullName=%s,
+            @Email=%s,
+            @Username=%s,
+            @PasswordHash=%s,
+            @UserId=@UserId OUTPUT,
+            @Message=@Message OUTPUT;
+        SELECT @UserId AS UserId, @Message AS Message;
+        """
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(query, [full_name, email, username, password_hash])
+                row = cursor.fetchone()
+
+            user_id = int(row[0]) if row and row[0] is not None else None
+            message = (row[1] if row and row[1] else "Signup failed.")
+            if user_id:
+                return Response(
+                    {"detail": message, "userId": user_id},
+                    status=status.HTTP_201_CREATED,
+                )
+            return Response({"detail": message}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            logger.exception("DB project signup failed")
+            return Response(
+                {"detail": f"Signup failed: {exc}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class DbProjectLoginView(APIView):
+    """
+    SQL-project login endpoint.
+    Calls dbo.sp_LoginUser and returns session/user data for frontend redirection.
+    """
+
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        email = (request.data.get("email") or "").strip().lower()
+        password = request.data.get("password") or ""
+        password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+        query = """
+        DECLARE @UserId INT, @SessionId UNIQUEIDENTIFIER, @Message NVARCHAR(200);
+        EXEC dbo.sp_LoginUser
+            @Email=%s,
+            @PasswordHash=%s,
+            @UserId=@UserId OUTPUT,
+            @SessionId=@SessionId OUTPUT,
+            @Message=@Message OUTPUT;
+        SELECT @UserId AS UserId, CAST(@SessionId AS NVARCHAR(36)) AS SessionId, @Message AS Message;
+        """
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(query, [email, password_hash])
+                row = cursor.fetchone()
+
+            user_id = int(row[0]) if row and row[0] is not None else None
+            session_id = row[1] if row and row[1] else None
+            message = (row[2] if row and row[2] else "Login failed.")
+            if user_id and session_id:
+                return Response(
+                    {"detail": message, "userId": user_id, "sessionId": session_id},
+                    status=status.HTTP_200_OK,
+                )
+            return Response({"detail": message}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as exc:
+            logger.exception("DB project login failed")
+            return Response(
+                {"detail": f"Login failed: {exc}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 # ---------------------------------------------------------------------------
