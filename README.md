@@ -33,10 +33,13 @@ Dilgorithm is a full-stack web application designed to connect users based on de
 Follow these steps to run the Dilgorithm project locally on your machine.
 
 ### Prerequisites
-*   Node.js (v18+)
-*   Python (3.10+)
+*   **Node.js** (v18+)
+*   **Python** (3.10+)
+*   **Microsoft ODBC Driver for SQL Server** (Required for the `pyodbc` package used in the backend database connection. Download and install it from [Microsoft's website](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server)).
 
 ### ⚡ Quick Start (Windows)
+*Note: Make sure you have completed the Backend Setup once (creating the virtual environment, installing dependencies, and running migrations) before using the quick start launcher.*
+
 You can launch both the backend and frontend development servers simultaneously using the single launcher script in the root directory:
 
 **Using Terminal (PowerShell):**
@@ -54,18 +57,29 @@ Double-click `run.bat` in the root folder of the project.
 
 ---
 
-### 🛠️ Manual Startup (Step-by-Step)
+### 🛠️ Manual Setup & Startup (Step-by-Step)
 
 #### 1. Backend Setup (Django)
-Navigate to the backend directory, activate the virtual environment, and start the server:
+Navigate to the backend directory, create and activate the virtual environment, install packages, and start the server:
 ```bash
 cd backend
-# Activate virtual environment (Windows)
+
+# Create the virtual environment (only needed the first time)
+python -m venv venv
+
+# Activate the virtual environment
+# On Windows (PowerShell/CMD):
 .\venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
 # Install requirements
+# (Make sure Microsoft ODBC Driver is installed on your OS first)
 pip install -r requirements.txt
+
 # Run migrations
 python manage.py migrate
+
 # Start the Daphne/ASGI server
 python manage.py runserver
 ```
