@@ -36,7 +36,27 @@ Follow these steps to run the Dilgorithm project locally on your machine.
 *   Node.js (v18+)
 *   Python (3.10+)
 
-### 1. Backend Setup (Django)
+### ⚡ Quick Start (Windows)
+You can launch both the backend and frontend development servers simultaneously using the single launcher script in the root directory:
+
+**Using Terminal (PowerShell):**
+```powershell
+.\run.bat
+```
+
+**Using Terminal (Command Prompt):**
+```cmd
+run.bat
+```
+
+**Using File Explorer:**
+Double-click `run.bat` in the root folder of the project.
+
+---
+
+### 🛠️ Manual Startup (Step-by-Step)
+
+#### 1. Backend Setup (Django)
 Navigate to the backend directory, activate the virtual environment, and start the server:
 ```bash
 cd backend
@@ -49,8 +69,6 @@ python manage.py migrate
 # Start the Daphne/ASGI server
 python manage.py runserver
 ```
-
----
 
 ## Supplement: additional features, architecture, and setup
 

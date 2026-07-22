@@ -45,8 +45,11 @@ backend/media/
 frontend/node_modules/
 frontend/build/
 frontend/dist/
+frontend/dist-ssr/
 frontend/.next/
 frontend/coverage/
+frontend/.env
+frontend/.env.*
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
